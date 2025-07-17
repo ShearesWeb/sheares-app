@@ -1,0 +1,77 @@
+# .github/workflows/ci-feature-branch.yml
+name: Feature Branch CI (src)
+
+# Triggers:
+# - Manual trigger via GitHub UI from branches (workflow_dispatch)
+# - Automatic on pushes to specific feature branches
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - 'feat/**'
+      - 'feature/**'
+      - 'JIRA/**'
+    paths:
+      - 'src/**/*'
+
+jobs:
+  developmental-build:
+    name: Build EAS Developmental Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 1. ⬇️ Checkout Code
+        uses: actions/checkout@v4
+
+      # - name: 2. ⚙️ Setup Node
+      #   uses: actions/setup-node@v4
+      #   with:
+      #     node-version: 20.x
+      #     cache: npm
+      
+      # - name: 3. 🚀 Setup Expo and EAS
+      #   uses: expo/expo-github-action@v8
+      #   with:
+      #     eas-version: latest
+      #     token: ${{ secrets.EXPO_TOKEN }}
+
+      # - name: 4. 📦 Install dependencies
+      #   run: npm ci
+      #   working-directory: ./src
+
+      # - name: 5. 🧠 Determine Build or Update
+      #   id: changes
+      #   run: |
+      #     git fetch origin ${{ github.event.before }} || echo "No previous commit"
+
+      #     if [ "${{ github.event.before }}" = "0000000000000000000000000000000000000000" ]; then
+      #       echo "New branch detected"
+      #       echo "build=true" >> $GITHUB_OUTPUT
+      #       echo "update=true" >> $GITHUB_OUTPUT
+      #     else
+      #       FILES_CHANGED=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }})
+      #       echo "$FILES_CHANGED" > changed_files.txt
+
+      #       if grep -qE '^src/(package(-lock)?\.json|yarn\.lock)$' changed_files.txt; then
+      #         echo "build=true" >> $GITHUB_OUTPUT
+      #       fi
+
+      #       if grep -q '^src/' changed_files.txt; then
+      #         echo "update=true" >> $GITHUB_OUTPUT
+      #       fi
+      #     fi
+          
+      # - name: 6. 🏗 EAS Build (if deps changed)
+      #   if: steps.changes.outputs.build == 'true'
+      #   run: |
+      #     eas build --platform android \
+      #               --profile development \
+      #               --non-interactive \
+      #               --channel ${{ github.ref_name }}
+
+      # - name: 7. 🔄 EAS Update (if src changed)
+      #   if: steps.changes.outputs.update == 'true'
+      #   run: |
+      #     eas update --branch ${{ github.ref_name }} \
+      #                --non-interactive \
+      #                --message "Auto update from CI"
