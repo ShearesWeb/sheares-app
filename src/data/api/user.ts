@@ -4,6 +4,7 @@ import { ImagePickerAsset } from "expo-image-picker";
 import * as ImageManipulator from "expo-image-manipulator";
 import { User, UserPreview } from "@/types/user";
 import { resolvePublicUrl } from "./commons";
+import { hasAdminAppointments } from "@/utils/comparators";
 
 export async function fetchUserPreviewsFromBackend(ids: number[]): Promise<UserPreview[] | null> {
     if (!ids || ids.length === 0) {
@@ -37,7 +38,7 @@ export async function fetchUserPreviewsFromBackend(ids: number[]): Promise<UserP
 
 export async function fetchUserFromBackend(email: string): Promise<User | null> {
     const { data, error } = await supabase
-        .from('users')
+        .from('authenticated_user')
         .select('*')
         .eq('email', email)
         .maybeSingle();
@@ -48,6 +49,7 @@ export async function fetchUserFromBackend(email: string): Promise<User | null> 
     }
 
     if (!data) return null;
+    console.log('Fetched user data:', data);
 
     const publicUrl = data.profile_photo_path
         ? await resolvePublicUrl('user-profile-pictures', data.profile_photo_path)
@@ -56,6 +58,7 @@ export async function fetchUserFromBackend(email: string): Promise<User | null> 
     return {
         ...data,
         profile_photo_url: publicUrl ?? null,
+        is_admin: hasAdminAppointments(data.appointments || []),
     } as User;
 }
 

@@ -1,5 +1,4 @@
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { Entypo } from '@expo/vector-icons';
 import { Announcement } from '@/types/announcement';
@@ -11,13 +10,14 @@ type AnnouncementProps = {
 const AnnouncementView: React.FC<AnnouncementProps> = ({ announcement }) => {
     if (!announcement) {
         return (
-            <View style={styles.placeholderContainer}>
-                <Image
-                    source={require('@/assets/images/emptyAnnouncementsPlaceholder.png')}
-                    style={styles.placeholderImage}
-                    contentFit="contain"
-                />
-            </View>
+            // <View style={styles.placeholderContainer}>
+            //     <Image
+            //         source={require('@/assets/images/emptyAnnouncementsPlaceholder.png')}
+            //         style={styles.placeholderImage}
+            //         contentFit="contain"
+            //     />
+            // </View>
+            <Text style={styles.noAnnouncement}>There are no current announcements.</Text>
         );
     }
 
@@ -84,6 +84,11 @@ const styles = StyleSheet.create({
     placeholderImage: {
         width: 300,
         height: 300,
+    },
+    noAnnouncement: {
+        fontSize: 14,
+        color: '#999',
+        marginTop: 10,
     },
 });
 

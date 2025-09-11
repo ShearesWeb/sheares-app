@@ -84,7 +84,7 @@ export default function CCADetail() {
                             <View style={styles.horizontalLine} />
                             <View style={styles.positionHeader}>
                                 <Text style={styles.positionTitle}>{position.name}</Text>
-                                <PositionTypeBadge positionType={position.type} style={{ marginLeft: 10 }} />
+                                <PositionTypeBadge ccaType={cca.cca_type} positionType={position.type} style={{ marginLeft: 10 }} />
                             </View>
                             {position.description && <Text style={styles.positionDescription}>{position.description}</Text>}
 
@@ -137,7 +137,7 @@ const styles = StyleSheet.create({
         marginVertical: 10,
     },
     positionSection: {
-        marginBottom: 10,
+        marginBottom: 8,
     },
     positionHeader: {
         flexDirection: 'row',
@@ -157,7 +157,7 @@ const styles = StyleSheet.create({
     personSection: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginVertical: 10,
+        marginTop: 10,
     },
     personDetails: {
         marginLeft: 12,
