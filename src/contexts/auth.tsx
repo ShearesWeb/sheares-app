@@ -21,7 +21,7 @@ import { getExpoPushNotificationToken } from '@/data/notif/notifications';
 
 // Session Type
 type Session =
-    | { type: UserType.User; googleSession: UserGoogleSignIn; user: User }
+    | { type: UserType.User; googleSession: UserGoogleSignIn; }
     | { type: UserType.Guest; }
     | null
 
@@ -73,10 +73,10 @@ export function useSession() {
 export function SessionProvider({ children }: PropsWithChildren) {
     const [[isLoading, session], setSession] = useStorageState<Session>('session');
     const [error, setError] = useState<string | null>(null);
+    const [user, setUser] = useState<User | null>(null);
 
     const isGuest = session?.type !== UserType.User;
-    const displayName = session?.type === UserType.User ? session.user.display_name : 'Guest';
-    const user = session?.type === UserType.User ? session.user : null;
+    const displayName = user?.display_name ? user.display_name : 'Guest';
     const clearError = () => setError(null);
 
     useEffect(() => {
@@ -85,6 +85,30 @@ export function SessionProvider({ children }: PropsWithChildren) {
         });
     }, []);
 
+    useEffect(() => {
+        const refreshUserData = async () => {
+            if (session?.type === UserType.User) {
+                try {
+                    const refreshedUser = await fetchUserFromBackend(session.googleSession.user.email);
+                    if (refreshedUser) {
+                        setUser(refreshedUser);
+                    } else {
+                        console.error("Session exists but user not found in backend.");
+                        setError("Your account could not be found. Please sign in again.");
+                        clearSession();
+                    }
+                } catch (err) {
+                    console.error('Failed to refresh user data:', err);
+                    setError("Error fetching user data. Please check your connection.");
+                }
+            }
+        };
+
+        refreshUserData();
+    }, [
+        session?.type,
+        session?.type === UserType.User ? session.googleSession.user.email : undefined
+    ]);
 
     const authenticateWithSupabase = async (idToken: string) => {
         const { error } = await supabase.auth.signInWithIdToken({
@@ -102,10 +126,16 @@ export function SessionProvider({ children }: PropsWithChildren) {
 
     const storeSession = (user: User | null, googleUser: UserGoogleSignIn | null) => {
         if (user) {
-            setSession({ type: UserType.User, googleSession: googleUser as UserGoogleSignIn, user });
+            setSession({ type: UserType.User, googleSession: googleUser as UserGoogleSignIn });
+            setUser(user);
         } else {
             setSession({ type: UserType.Guest });
         }
+    };
+
+    const clearSession = () => {
+        setSession(null);
+        setUser(null);
     };
 
     const updateExpoPushToken = async (userId: number) => {
@@ -171,7 +201,7 @@ export function SessionProvider({ children }: PropsWithChildren) {
     const signOut = async () => {
         await GoogleSignin.signOut();
         await supabase.auth.signOut();
-        setSession(null);
+        clearSession();
     };
 
     /** Continues the app flow as a guest user */
@@ -187,9 +217,9 @@ export function SessionProvider({ children }: PropsWithChildren) {
      * @returns Public URL of the uploaded image
      */
     const updateUserProfilePicture =
-        session?.type === UserType.User
+        session?.type === UserType.User && user
             ? async (fileData: ImagePickerAsset): Promise<string> => {
-                const userId = session.user.id;
+                const userId = user.id;
                 const filePath = await uploadUserProfilePictureStorage(userId, user?.profile_photo_path || null, fileData);
                 if (!filePath) {
                     throw new Error('Failed to upload image to storage.');
@@ -200,9 +230,11 @@ export function SessionProvider({ children }: PropsWithChildren) {
                     throw new Error('Failed to update user image in database.');
                 }
 
-                session.user.profile_photo_path = filePath;
-                session.user.profile_photo_url = url;
-                setSession({ ...session });
+                setUser({
+                    ...user,
+                    profile_photo_path: filePath,
+                    profile_photo_url: url,
+                });
 
                 return url;
             }

@@ -1,4 +1,5 @@
 import AnnouncementView from '@/components/AnnouncementView';
+import ActionButton from '@/components/Buttons/ActionButton';
 import Button from '@/components/Buttons/Button';
 import EventCollection from '@/components/EventCollection';
 import ProfileImage from '@/components/Images/ProfileImage';
@@ -91,35 +92,32 @@ export default function Index() {
             <ProfileImage src={user?.profile_photo_url} />
           </TouchableOpacity>
         </View>
-
-        <View style={styles.headerContainer}>
-          <Text style={styles.header}>Announcements</Text>
-          <Button variant='bordered' text='Create' onPress={() => router.navigate('/announcement/create')}></Button>
-        </View>
+        {user?.is_admin && (
+          <View style={styles.actionButtonGroup}>
+            <ActionButton text='Create Announcement' onPress={() => router.navigate('/announcement/create')} />
+            {isFeatureEnabled('eventsFeature') && <ActionButton text='Create Event' onPress={() => router.navigate('/event/create')} />}
+          </View>
+        )}
+        <Text style={styles.header}>Announcements</Text>
         <AnnouncementView announcement={announcements?.[0] ?? null} />
 
         {
           isFeatureEnabled('eventsFeature') ? (
             <>
-              <View style={styles.headerContainer}>
-                <Text style={styles.header}>Your Signups</Text>
-              </View>
+              <Text style={styles.header}>Your Signups</Text>
               <EventCollection events={currentEvents} status={EventStatus.Current} />
-              <View style={styles.headerContainer}>
-                <Text style={styles.header}>Current Events</Text>
-                <Button variant='bordered' text='Create' onPress={() => router.navigate('/event/create')}></Button>
-              </View>
+              <Text style={styles.header}>Current Events</Text>
               <EventCollection events={currentEvents} status={EventStatus.Current} />
-              <View style={styles.headerContainer}>
-                <Text style={styles.header}>Upcoming Events</Text>
-              </View>
+              <Text style={styles.header}>Upcoming Events</Text>
               <EventCollection events={upcomingEvents} status={EventStatus.Upcoming} />
             </>
           ) : (
-            <InfoScreen
-              message="We are still cooking up our events system — check out the CCA infographics meanwhile!"
-              description='What to expect: A comprehensive events system that allows you to create, manage, and sign up for events within Sheares Hall.'
-            />
+            <View style={{ marginTop: 20 }}>
+              <InfoScreen
+                message="We are still cooking up our events system — check out the CCA infographics meanwhile!"
+                description='What to expect: A comprehensive events system that allows you to create, manage, and sign up for events within Sheares Hall.'
+              />
+            </View>
           )
         }
       </ScrollView>
@@ -145,18 +143,16 @@ const styles = StyleSheet.create({
   },
   subTitle: {
     color: '#666',
-    marginBottom: 20,
   },
   header: {
+    marginTop: 16,
     fontWeight: '600',
     fontSize: 24,
   },
-  headerContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+  actionButtonGroup: {
+    marginTop: 20,
+    gap: 8,
   },
-
   adminButton: {
     borderWidth: 1,
     borderColor: '#F18437',
@@ -170,11 +166,6 @@ const styles = StyleSheet.create({
     color: '#F18437',
     fontSize: 16,
     fontWeight: 'bold',
-  },
-  placeholderContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   placeholderImage: {
     width: 300,
