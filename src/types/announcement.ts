@@ -6,7 +6,7 @@ export interface Announcement {
     title: string;
     content: string;
     created_at: Date;
-    expiry_time: Date;
+    expires_at: Date;
     author: UserPreview;
 }
 

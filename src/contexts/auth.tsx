@@ -76,7 +76,11 @@ export function SessionProvider({ children }: PropsWithChildren) {
     const [user, setUser] = useState<User | null>(null);
 
     const isGuest = session?.type !== UserType.User;
-    const displayName = user?.display_name ? user.display_name : 'Guest';
+    const displayName = !isGuest ?
+        user?.display_name ? user.display_name :
+            user?.name ? user.name : "User" :
+        'Guest';
+
     const clearError = () => setError(null);
 
     useEffect(() => {

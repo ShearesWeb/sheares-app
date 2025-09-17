@@ -1,6 +1,7 @@
 import { supabase } from "@/utils/supabase";
 import { CCA, CCAPosition } from "@/types/cca";
 import { resolvePublicUrl } from "./commons";
+import { PUBLIC_CCA_INFO_VIEW } from "@/constants/tables";
 
 async function transformPositions(rawPositions: any[]): Promise<CCAPosition[]> {
     return Promise.all(
@@ -20,7 +21,7 @@ async function transformPositions(rawPositions: any[]): Promise<CCAPosition[]> {
 export async function fetchAllCCAApi(): Promise<CCA[]> {
     console.log("Fetching all CCAs from API...");
     const { data, error } = await supabase
-        .from('public_cca_info')
+        .from(PUBLIC_CCA_INFO_VIEW)
         .select(`*`)
         .order('name', { ascending: true })
 
@@ -42,7 +43,7 @@ export async function fetchCCAApi(id: number): Promise<CCA | null> {
     console.log(`Fetching CCA with ID ${id}...`);
 
     const { data, error } = await supabase
-        .from("public_cca_info")
+        .from(PUBLIC_CCA_INFO_VIEW)
         .select(`*`)
         .eq("id", id)
         .maybeSingle();
