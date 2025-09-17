@@ -31,7 +31,7 @@ export default function UpdateAnnouncement() {
 
         setTitle(announcement.title)
         setContent(announcement.content)
-        setExpiryTime(announcement.expiry_time)
+        setExpiryTime(announcement.expires_at)
         setLoading(false);
     }
 
@@ -47,7 +47,7 @@ export default function UpdateAnnouncement() {
                 id: announcementId,
                 title,
                 content,
-                expiry_time: expiryTime,
+                expires_at: expiryTime,
             })
             router.back();
         } catch (error) {

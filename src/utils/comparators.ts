@@ -15,15 +15,7 @@ export function getEventStatus(event: EventLike): EventStatus {
 }
 
 export function hasAdminAppointments(appointments: UserAppointment[]): boolean {
-    const adminLevels: CCAPositionType[] = [
-        CCAPositionType.Chair,
-        CCAPositionType.Head,
-        CCAPositionType.Captain,
-        CCAPositionType.Vice,
-        CCAPositionType.Maincomm,
-    ];
-
     return appointments.some(appointment =>
-        adminLevels.includes(appointment.position_type as CCAPositionType)
+        appointment.is_admin
     );
 }

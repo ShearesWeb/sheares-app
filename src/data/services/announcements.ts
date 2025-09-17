@@ -52,7 +52,7 @@ export async function updateAnnouncement(update: UpdateAnnouncementInput): Promi
 
     if (update.title) announcement.title = update.title;
     if (update.content) announcement.content = update.content;
-    if (update.expiry_time) update.expiry_time = announcement.expiry_time;
+    if (update.expires_at) update.expires_at = announcement.expires_at;
 
     AnnouncementsCache.hset(CACHE_KEY, update.id.toString(), announcement);
     return;

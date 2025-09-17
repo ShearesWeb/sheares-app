@@ -30,7 +30,7 @@ export default function CreateAnnouncement() {
             await createAnnouncement({
                 title,
                 content,
-                expiry_time: expiryTime,
+                expires_at: expiryTime,
                 author: {
                     id: user.id,
                     name: user.name,
