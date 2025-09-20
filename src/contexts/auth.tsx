@@ -5,6 +5,7 @@ import React, {
     useEffect,
     useState,
 } from 'react';
+import { Platform } from 'react-native';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import { useStorageState } from './useStorageState';
 import {
@@ -92,26 +93,12 @@ export function SessionProvider({ children }: PropsWithChildren) {
     useEffect(() => {
         GoogleSignin.configure({
             webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
-            iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID
+            iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
+            offlineAccess: true,
+            scopes: ['profile', 'email'],
         });
     }, []);
 
-    // Authenticate with Supabase
-    const authenticateWithSupabase = async (idToken: string, provider: 'apple' | 'google') => {
-        const { error } = await supabase.auth.signInWithIdToken({
-            provider,
-            token: idToken,
-        });
-
-        if (error) {
-            console.error("Supabase auth error:", error.message);
-            setError("Unable to sign in. Please try again later.");
-            return null;
-        }
-        return true;
-    };
-
-    // Store session in local storage
     const storeSession = (user: User | null, provider?: 'apple' | 'google', googleUser?: UserGoogleSignIn) => {
         if (user && provider) {
             setSession({
@@ -146,10 +133,17 @@ export function SessionProvider({ children }: PropsWithChildren) {
             });
 
             if (credential.identityToken) {
-                const supabaseUser = await authenticateWithSupabase(credential.identityToken, 'apple');
-                if (!supabaseUser) return;
+                const { error } = await supabase.auth.signInWithIdToken({
+                    provider: 'apple',
+                    token: credential.identityToken,
+                });
 
-                // If email is available, try to fetch user from backend
+                if (error) {
+                    console.error("Supabase auth error:", error.message);
+                    setError("Unable to sign in. Please try again later.");
+                    return;
+                }
+
                 if (credential.email) {
                     const user = await fetchUserFromBackend(credential.email);
                     storeSession(user, 'apple');
@@ -173,14 +167,13 @@ export function SessionProvider({ children }: PropsWithChildren) {
         }
     };
 
-    // Google Sign-In
+    // Google Sign-In using react-native-google-signin for both platforms
     const signInWithGoogle = async () => {
         try {
             await GoogleSignin.hasPlayServices();
             const response = await GoogleSignin.signIn();
 
-            if (!isSuccessResponse(response)) {
-                console.error("Sign in was cancelled by the user.");
+            if (response.type === 'cancelled') {
                 setError("Sign in was cancelled.");
                 return;
             }
@@ -194,8 +187,17 @@ export function SessionProvider({ children }: PropsWithChildren) {
                 return;
             }
 
-            const supabaseUser = await authenticateWithSupabase(idToken, 'google');
-            if (!supabaseUser) return;
+            // Authenticate with Supabase
+            const { error } = await supabase.auth.signInWithIdToken({
+                provider: 'google',
+                token: idToken,
+            });
+
+            if (error) {
+                console.error("Supabase auth error:", error.message);
+                setError("Unable to sign in. Please try again later.");
+                return;
+            }
 
             const user = await fetchUserFromBackend(googleUser.user.email);
             storeSession(user, 'google', googleUser);
@@ -203,11 +205,14 @@ export function SessionProvider({ children }: PropsWithChildren) {
             if (user) {
                 await updateExpoPushToken(user.id);
             }
-        } catch (error) {
-            console.error('Error during Google sign-in:', error);
 
+        } catch (error) {
+            console.error('Google sign-in error:', error);
             if (isErrorWithCode(error)) {
                 switch (error.code) {
+                    case statusCodes.SIGN_IN_CANCELLED:
+                        setError('Sign in was cancelled.');
+                        break;
                     case statusCodes.IN_PROGRESS:
                         setError('Sign-in is already in progress. Please wait.');
                         break;
@@ -218,7 +223,7 @@ export function SessionProvider({ children }: PropsWithChildren) {
                         setError('Something went wrong during Google Sign-in. Please try again.');
                 }
             } else {
-                setError('Unexpected error. Please try again later.');
+                setError('Google Sign-in failed. Please try again.');
             }
         }
     };
@@ -226,7 +231,11 @@ export function SessionProvider({ children }: PropsWithChildren) {
     // Sign out
     const signOut = async () => {
         if (session?.type === UserType.User && session.provider === 'google') {
-            await GoogleSignin.signOut();
+            try {
+                await GoogleSignin.signOut();
+            } catch (error) {
+                console.error('Google sign out error:', error);
+            }
         }
         await supabase.auth.signOut();
         setSession(null);

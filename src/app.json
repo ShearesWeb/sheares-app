@@ -16,12 +16,13 @@
     "ios": {
       "supportsTablet": true,
       "usesAppleSignIn": true,
-      "infoPlist" : {
+      "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       },
       "entitlements": {
         "aps-environment": "production"
-      }
+      },
+      "bundleIdentifier": "com.sheareswebteam.shearesapp"
     },
     "android": {
       "icon": "./assets/images/icon.png",
@@ -32,7 +33,8 @@
       "edgeToEdgeEnabled": true,
       "permissions": [
         "android.permission.RECORD_AUDIO"
-      ]
+      ],
+      "package": "com.sheareswebteam.shearesapp"
     },
     "web": {
       "bundler": "metro",
