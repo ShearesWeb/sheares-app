@@ -15,11 +15,12 @@ const positionTypeColors: Record<CCAPositionType, { backgroundColor: string; tex
     [CCAPositionType.Blockcomm]: { backgroundColor: '#1E88E5', textColor: '#fff' },  // Blue
     [CCAPositionType.Maincomm]: { backgroundColor: '#1E88E5', textColor: '#fff' },  // Blue
     [CCAPositionType.Subcomm]: { backgroundColor: '#43A047', textColor: '#fff' },   // Green
+    [CCAPositionType.TeamManager]: { backgroundColor: '#43A047', textColor: '#fff' },   // Green
     [CCAPositionType.Member]: { backgroundColor: '#616161', textColor: '#fff' },    // Grey
 };
 
 const PositionTypeBadge: React.FC<PositionTypeBadgeProps> = ({ ccaType, positionType, style }) => {
-    const { backgroundColor, textColor } = positionTypeColors[positionType];
+    const { backgroundColor, textColor } = positionTypeColors[positionType] || { backgroundColor: '#616161', textColor: '#fff' };
 
     let positionTypeLabel: string = positionType;
     if (positionType === CCAPositionType.Lead) {
@@ -28,13 +29,32 @@ const PositionTypeBadge: React.FC<PositionTypeBadgeProps> = ({ ccaType, position
                 positionTypeLabel = 'Chair';
                 break;
             case CCAType.Culture:
-                positionTypeLabel = 'Head';
+                positionTypeLabel = 'IC';
                 break;
             case CCAType.Sports:
                 positionTypeLabel = 'Captain';
                 break;
             case CCAType.JCRC:
                 positionTypeLabel = 'Director';
+                break;
+            default:
+                break;
+        }
+    }
+
+    if (positionType === CCAPositionType.Vice) {
+        switch (ccaType) {
+            case CCAType.Committee:
+                positionTypeLabel = 'Vice Chair';
+                break;
+            case CCAType.Culture:
+                positionTypeLabel = '2IC';
+                break;
+            case CCAType.Sports:
+                positionTypeLabel = 'Vice Captain';
+                break;
+            case CCAType.JCRC:
+                positionTypeLabel = 'Vice Director';
                 break;
             default:
                 break;

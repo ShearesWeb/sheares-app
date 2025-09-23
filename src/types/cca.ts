@@ -14,6 +14,7 @@ export enum CCAPositionType {
     Blockcomm = 'blockcomm',
     Maincomm = 'maincomm',
     Subcomm = 'subcomm',
+    TeamManager = 'team manager',
     Member = 'member',
 }
 
