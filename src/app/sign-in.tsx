@@ -8,7 +8,9 @@ import SignInButton from '@/components/Buttons/SignInButton';
 import TermsModal from '@/components/Modals/TermsModal';
 import LoadingScreen from '@/components/Screens/LoadingScreen';
 import { useTermsData } from '@/hooks/useTermsHook';
+import { Platform } from 'react-native';
 import TextModal from '@/components/Modals/TextModal';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 
 export default function SignIn() {
@@ -33,32 +35,35 @@ export default function SignIn() {
         continueAsGuest();
         router.replace('/');
     };
+    const insets = useSafeAreaInsets();
+
 
     return (
         <SafeAreaView style={styles.container}>
             {/* Top Image Section */}
             <View style={styles.imageContainer}>
                 <Image
-                    source={require('@/assets/images/splash-icon.png')}
+                    source={require('@/assets/images/loginScreenBackground.png')}
                     style={styles.image}
                     contentFit="contain"
                 />
             </View>
 
             {/* Bottom Sheet Section */}
-            <View style={styles.bottomSheet}>
+            <SafeAreaView style={[styles.bottomSheet, { paddingBottom: insets.bottom + 24 }]}>
                 <Text style={styles.headerText}>Sheares App</Text>
                 <Text style={styles.subHeaderText}>Organise and track your</Text>
                 <Text style={styles.subHeaderTextTwo}>Sheares activities</Text>
 
                 {/* Apple Sign-In Button */}
-                <AppleAuthentication.AppleAuthenticationButton
-                    buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
-                    buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
-                    cornerRadius={5}
-                    style={styles.appleButton}
-                    onPress={handleAppleSignIn}
-                />
+                {Platform.OS === 'ios' && (
+                    <AppleAuthentication.AppleAuthenticationButton
+                        buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
+                        buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
+                        cornerRadius={5}
+                        style={styles.appleButton}
+                        onPress={handleAppleSignIn}
+                    />)}
 
                 {/* Google Sign-In Button */}
                 <SignInButton
@@ -95,7 +100,7 @@ export default function SignIn() {
                 {error && (
                     <Text style={styles.errorText}>{error}</Text>
                 )}
-            </View>
+            </SafeAreaView>
 
             {/* Terms Modal */}
             {termsData && (
@@ -135,14 +140,13 @@ const styles = StyleSheet.create({
         borderTopLeftRadius: 24,
         borderTopRightRadius: 24,
         padding: 24,
+        minHeight: '55%',
         alignItems: 'center',
-        minHeight: '55%', // Increased to accommodate both buttons
-        justifyContent: 'flex-start',
+        justifyContent: 'center',
     },
     headerText: {
         fontSize: 40,
         fontWeight: 'bold',
-        marginTop: 20, // Reduced margin
         marginBottom: 10,
         color: '#fff',
     },
@@ -153,7 +157,7 @@ const styles = StyleSheet.create({
     subHeaderTextTwo: {
         fontSize: 14,
         color: '#fff',
-        marginBottom: 20, // Increased spacing
+        marginBottom: 20,
     },
     appleButton: {
         width: 200,
