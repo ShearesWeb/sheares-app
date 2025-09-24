@@ -1,10 +1,12 @@
-import {
+import React, {
     createContext,
     useContext,
     type PropsWithChildren,
     useEffect,
     useState,
 } from 'react';
+import { Platform } from 'react-native';
+import * as AppleAuthentication from 'expo-apple-authentication';
 import { useStorageState } from './useStorageState';
 import {
     GoogleSignin,
@@ -14,20 +16,26 @@ import {
     User as UserGoogleSignIn,
 } from '@react-native-google-signin/google-signin';
 import { User, UserType } from '@/types/user';
-import { supabase } from '../utils/supabase'
+import { supabase } from '../utils/supabase';
 import { ImagePickerAsset } from 'expo-image-picker';
-import { fetchUserFromBackend, updateUserExpoPushTokenApi, updateUserProfilePictureApi, uploadUserProfilePictureStorage } from '@/data/api/user';
+import {
+    fetchUserFromBackend,
+    updateUserExpoPushTokenApi,
+    updateUserProfilePictureApi,
+    uploadUserProfilePictureStorage
+} from '@/data/api/user';
 import { getExpoPushNotificationToken } from '@/data/notif/notifications';
 
 // Session Type
 type Session =
-    | { type: UserType.User; googleSession: UserGoogleSignIn; }
-    | { type: UserType.Guest; }
-    | null
+    | { type: UserType.User; user: User; provider: 'apple' | 'google'; googleSession?: UserGoogleSignIn }
+    | { type: UserType.Guest }
+    | null;
 
 // Auth Context Type
 type AuthContextType = {
-    signIn: () => void;
+    signInWithApple: () => void;
+    signInWithGoogle: () => void;
     signOut: () => void;
     continueAsGuest: () => void;
     user: User | null;
@@ -40,13 +48,14 @@ type AuthContextType = {
     clearError: () => void;
 };
 
-// No-op for default context
+// No-op functions for default context
 const noop = () => { };
 const noopAsync = async () => null;
 
 // Default Context
 const AuthContext = createContext<AuthContextType>({
-    signIn: noop,
+    signInWithApple: noop,
+    signInWithGoogle: noop,
     signOut: noop,
     continueAsGuest: noop,
     user: null,
@@ -81,42 +90,19 @@ export function SessionProvider({ children }: PropsWithChildren) {
             user?.name ? user.name : "User" :
         'Guest';
 
+
     const clearError = () => setError(null);
 
+    // Configure Google Sign In
     useEffect(() => {
         GoogleSignin.configure({
             webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
-            iosClientId: process.env.EXPO_PUBLIC_IOS_CLIENT_ID,
+            iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
             offlineAccess: true,
             scopes: ['profile', 'email'],
-            forceCodeForRefreshToken: true,
         });
     }, []);
 
-    useEffect(() => {
-        const refreshUserData = async () => {
-            if (session?.type === UserType.User) {
-                try {
-                    const refreshedUser = await fetchUserFromBackend(session.googleSession.user.email);
-                    if (refreshedUser) {
-                        setUser(refreshedUser);
-                    } else {
-                        console.error("Session exists but user not found in backend.");
-                        setError("Your account could not be found. Please sign in again.");
-                        clearSession();
-                    }
-                } catch (err) {
-                    console.error('Failed to refresh user data:', err);
-                    setError("Error fetching user data. Please check your connection.");
-                }
-            }
-        };
-
-        refreshUserData();
-    }, [
-        session?.type,
-        session?.type === UserType.User ? session.googleSession.user.email : undefined
-    ]);
 
     const authenticateWithSupabase = async (idToken: string) => {
         const { error } = await supabase.auth.signInWithIdToken({
@@ -134,8 +120,7 @@ export function SessionProvider({ children }: PropsWithChildren) {
 
     const storeSession = (user: User | null, googleUser: UserGoogleSignIn | null) => {
         if (user) {
-            setSession({ type: UserType.User, googleSession: googleUser as UserGoogleSignIn });
-            setUser(user);
+            setSession({ type: UserType.User, googleSession: googleUser as UserGoogleSignIn, user });
         } else {
             setSession({ type: UserType.Guest });
         }
@@ -146,125 +131,186 @@ export function SessionProvider({ children }: PropsWithChildren) {
         setUser(null);
     };
 
+    // Update Expo push token
     const updateExpoPushToken = async (userId: number) => {
-        const token = await getExpoPushNotificationToken();
-        await updateUserExpoPushTokenApi(userId, token);
-    }
-
-    const handleSignInError = (error: unknown) => {
-        console.error('Error during sign-in:', error);
-
-        if (isErrorWithCode(error)) {
-            switch (error.code) {
-                case statusCodes.IN_PROGRESS:
-                    setError('Sign-in is already in progress. Please wait.');
-                    break;
-                case statusCodes.PLAY_SERVICES_NOT_AVAILABLE:
-                    setError('Google Play Services is not available. Please update or check your device settings.');
-                    break;
-                default:
-                    setError('Something went wrong during Google Sign-in. Please try again.');
-            }
-        } else {
-            setError('Unexpected error. Please try again later.');
+        try {
+            const token = await getExpoPushNotificationToken();
+            await updateUserExpoPushTokenApi(userId, token);
+        } catch (error) {
+            console.error('Failed to update push token:', error);
         }
     };
 
+    // Apple Sign-In
+    const signInWithApple = async () => {
+        try {
+            const credential = await AppleAuthentication.signInAsync({
+                requestedScopes: [
+                    AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+                    AppleAuthentication.AppleAuthenticationScope.EMAIL,
+                ],
+            });
 
-    const signIn = async () => {
+            if (credential.identityToken) {
+                const { error } = await supabase.auth.signInWithIdToken({
+                    provider: 'apple',
+                    token: credential.identityToken,
+                });
+
+                if (error) {
+                    console.error("Supabase auth error:", error.message);
+                    setError("Unable to sign in. Please try again later.");
+                    return;
+                }
+
+                if (credential.email) {
+                    const user = await fetchUserFromBackend(credential.email);
+                    storeSession(user, 'apple');
+
+                    if (user) {
+                        await updateExpoPushToken(user.id);
+                    }
+                } else {
+                    // Handle case where email is not provided (subsequent logins)
+                    storeSession(null);
+                }
+            }
+        } catch (error: any) {
+            console.error('Apple Sign-In failed:', error);
+
+            if (error.code === 'ERR_REQUEST_CANCELED') {
+                setError('Sign in was cancelled.');
+            } else {
+                setError('Apple Sign-In failed. Please try again.');
+            }
+        }
+    };
+
+    // Google Sign-In using react-native-google-signin for both platforms
+    const signInWithGoogle = async () => {
         try {
             await GoogleSignin.hasPlayServices();
             const response = await GoogleSignin.signIn();
 
-            if (!isSuccessResponse(response)) {
-                console.error("Sign in was cancelled by the user.");
+            if (response.type === 'cancelled') {
                 setError("Sign in was cancelled.");
                 return;
             }
 
             const googleUser = response.data;
-
             const idToken = googleUser.idToken;
+
             if (!idToken) {
                 console.error("Google Sign-in succeeded but no ID token was found.");
                 setError("Sign in failed. Please try again.");
                 return;
             }
 
-            const supabaseUser = await authenticateWithSupabase(idToken);
-            if (!supabaseUser) return;
+            // Authenticate with Supabase
+            const { error } = await supabase.auth.signInWithIdToken({
+                provider: 'google',
+                token: idToken,
+            });
+
+            if (error) {
+                console.error("Supabase auth error:", error.message);
+                setError("Unable to sign in. Please try again later.");
+                return;
+            }
 
             const user = await fetchUserFromBackend(googleUser.user.email);
-            storeSession(user, googleUser);
+            storeSession(user, 'google', googleUser);
 
             if (user) {
-                await updateExpoPushToken(user.id)
+                await updateExpoPushToken(user.id);
             }
+
         } catch (error) {
-            handleSignInError(error);
+            console.error('Google sign-in error:', error);
+            if (isErrorWithCode(error)) {
+                switch (error.code) {
+                    case statusCodes.SIGN_IN_CANCELLED:
+                        setError('Sign in was cancelled.');
+                        break;
+                    case statusCodes.IN_PROGRESS:
+                        setError('Sign-in is already in progress. Please wait.');
+                        break;
+                    case statusCodes.PLAY_SERVICES_NOT_AVAILABLE:
+                        setError('Google Play Services is not available. Please update or check your device settings.');
+                        break;
+                    default:
+                        setError('Something went wrong during Google Sign-in. Please try again.');
+                }
+            } else {
+                setError('Google Sign-in failed. Please try again.');
+            }
         }
     };
 
-    /** Clears the current session */
+    // Sign out
     const signOut = async () => {
-        await GoogleSignin.signOut();
+        if (session?.type === UserType.User && session.provider === 'google') {
+            try {
+                await GoogleSignin.signOut();
+            } catch (error) {
+                console.error('Google sign out error:', error);
+            }
+        }
         await supabase.auth.signOut();
         clearSession();
     };
 
-    /** Continues the app flow as a guest user */
+    // Continue as guest
     const continueAsGuest = () => {
-        storeSession(null, null);
+        storeSession(null);
     };
 
-    /**
-     * Uploads a new profile picture and updates the user record in the database.
-     * Only available for authenticated users (UserType.User).
-     *
-     * @param fileData - The image file to upload
-     * @returns Public URL of the uploaded image
-     */
+    // Update profile picture (only for authenticated users)
     const updateUserProfilePicture =
-        session?.type === UserType.User && user
+        session?.type === UserType.User
             ? async (fileData: ImagePickerAsset): Promise<string> => {
-                const userId = user.id;
+                const userId = session.user.id;
                 const filePath = await uploadUserProfilePictureStorage(userId, user?.profile_photo_path || null, fileData);
                 if (!filePath) {
                     throw new Error('Failed to upload image to storage.');
                 }
 
                 const url = await updateUserProfilePictureApi(userId, filePath);
+
                 if (!url) {
                     throw new Error('Failed to update user image in database.');
                 }
 
-                setUser({
-                    ...user,
-                    profile_photo_path: filePath,
-                    profile_photo_url: url,
-                });
+                session.user.profile_photo_path = filePath;
+                session.user.profile_photo_url = url;
+                setSession({ ...session });
 
                 return url;
+            } catch (error) {
+                console.error('Profile picture update failed:', error);
+                throw error;
             }
+}
             : noopAsync;
 
-    return (
-        <AuthContext.Provider
-            value={{
-                signIn,
-                signOut,
-                continueAsGuest,
-                updateUserProfilePicture,
-                user,
-                session,
-                isGuest,
-                isLoading,
-                displayName,
-                error,
-                clearError
-            }}
-        >
-            {children}
-        </AuthContext.Provider>
-    );
+return (
+    <AuthContext.Provider
+        value={{
+            signInWithApple,
+            signInWithGoogle,
+            signOut,
+            continueAsGuest,
+            updateUserProfilePicture,
+            user,
+            session,
+            isGuest,
+            isLoading,
+            displayName,
+            error,
+            clearError,
+        }}
+    >
+        {children}
+    </AuthContext.Provider>
+);
 }

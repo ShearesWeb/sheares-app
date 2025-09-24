@@ -27,6 +27,7 @@ export default ({ config }) => ({
     ios: {
         ...config.ios,
         bundleIdentifier: getUniqueIdentifier(),
+        googleServicesFile: process.env.GOOGLE_SERVICES_PLIST ?? './GoogleService-Info.plist',
     },
     android: {
         ...config.android,
