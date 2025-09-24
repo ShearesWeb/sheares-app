@@ -2,10 +2,12 @@ import { Announcement, CreateAnnouncementInput, CreateAnnouncementOutput, Update
 import { UserPreview } from "@/types/user";
 import { supabase } from "@/utils/supabase";
 import { resolvePublicUrl } from "./commons";
+import { USER_PROFILE_PICTURE_BUCKET } from "@/constants/storage";
+import { ANNOUNCEMENTS_TABLE } from "@/constants/tables";
 
 async function transformAnnouncement(raw: any): Promise<Announcement> {
     const profile_photo_url = await resolvePublicUrl(
-        'user-profile-pictures',
+        USER_PROFILE_PICTURE_BUCKET,
         raw.author?.profile_photo_path ?? null
     );
 
@@ -20,27 +22,27 @@ async function transformAnnouncement(raw: any): Promise<Announcement> {
         title: raw.title,
         content: raw.content,
         created_at: new Date(raw.created_at),
-        expiry_time: new Date(raw.expiry_time),
+        expires_at: new Date(raw.expires_at),
         author,
     };
 }
 
 export async function fetchAllAnnouncementApi(): Promise<Announcement[]> {
     const { data, error } = await supabase
-        .from('announcements')
+        .from(ANNOUNCEMENTS_TABLE)
         .select(`
             id,
             title,
             content,
             created_at,
-            expiry_time,
+            expires_at,
             author:users (
                 id,
                 name,
                 profile_photo_path
             )
         `)
-        .gt('expiry_time', new Date().toISOString())
+        .gt('expires_at', new Date().toISOString())
         .order('created_at', { ascending: false });
 
     if (error) {
@@ -52,13 +54,13 @@ export async function fetchAllAnnouncementApi(): Promise<Announcement[]> {
 
 export async function fetchAnnouncementApi(id: number): Promise<Announcement | null> {
     const { data, error } = await supabase
-        .from('announcements')
+        .from(ANNOUNCEMENTS_TABLE)
         .select(`
             id,
             title,
             content,
             created_at,
-            expiry_time,
+            expires_at,
             author:users (
                 id,
                 name,
@@ -77,13 +79,13 @@ export async function fetchAnnouncementApi(id: number): Promise<Announcement | n
 
 export async function createAnnouncementApi(payload: CreateAnnouncementInput): Promise<CreateAnnouncementOutput> {
     const { data, error } = await supabase
-        .from('announcements')
+        .from(ANNOUNCEMENTS_TABLE)
         .insert([
             {
                 user_id: payload.author.id,
                 title: payload.title,
                 content: payload.content,
-                expiry_time: payload.expiry_time.toISOString(),
+                expires_at: payload.expires_at.toISOString(),
             },
         ])
         .select('id, created_at')
@@ -110,12 +112,12 @@ export async function updateAnnouncementApi(payload: UpdateAnnouncementInput): P
     const updateData: any = {};
     if (fieldsToUpdate.title) updateData.title = fieldsToUpdate.title;
     if (fieldsToUpdate.content) updateData.content = fieldsToUpdate.content;
-    if (fieldsToUpdate.expiry_time) {
-        updateData.expiry_time = fieldsToUpdate.expiry_time.toISOString?.() ?? fieldsToUpdate.expiry_time;
+    if (fieldsToUpdate.expires_at) {
+        updateData.expires_at = fieldsToUpdate.expires_at.toISOString?.() ?? fieldsToUpdate.expires_at;
     }
 
     const { error } = await supabase
-        .from('announcements')
+        .from(ANNOUNCEMENTS_TABLE)
         .update(updateData)
         .eq('id', id);
 
@@ -128,7 +130,7 @@ export async function updateAnnouncementApi(payload: UpdateAnnouncementInput): P
 
 export async function deleteAnnouncementApi(id: number): Promise<void> {
     const { error } = await supabase
-        .from('announcements')
+        .from(ANNOUNCEMENTS_TABLE)
         .delete()
         .eq('id', id);
 

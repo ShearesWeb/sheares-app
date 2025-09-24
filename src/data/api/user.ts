@@ -4,6 +4,9 @@ import { ImagePickerAsset } from "expo-image-picker";
 import * as ImageManipulator from "expo-image-manipulator";
 import { User, UserPreview } from "@/types/user";
 import { resolvePublicUrl } from "./commons";
+import { hasAdminAppointments } from "@/utils/comparators";
+import { AUTHENTICATED_USER_INFO_VIEW, PUBLIC_USER_INFO_VIEW } from "@/constants/tables";
+import { USER_PROFILE_PICTURE_BUCKET } from "@/constants/storage";
 
 export async function fetchUserPreviewsFromBackend(ids: number[]): Promise<UserPreview[] | null> {
     if (!ids || ids.length === 0) {
@@ -12,7 +15,7 @@ export async function fetchUserPreviewsFromBackend(ids: number[]): Promise<UserP
     }
     console.log('Fetching user previews for IDs:', ids);
     const { data, error } = await supabase
-        .from('public_users')
+        .from(PUBLIC_USER_INFO_VIEW)
         .select('id, name, profile_photo_path')
         .in('id', ids);
 
@@ -27,7 +30,7 @@ export async function fetchUserPreviewsFromBackend(ids: number[]): Promise<UserP
         data.map(async (user: any) => ({
             id: user.id,
             name: user.name,
-            profile_photo_url: await resolvePublicUrl('user-profile-pictures', user.profile_photo_path),
+            profile_photo_url: await resolvePublicUrl(USER_PROFILE_PICTURE_BUCKET, user.profile_photo_path),
         }))
     );
 
@@ -37,7 +40,7 @@ export async function fetchUserPreviewsFromBackend(ids: number[]): Promise<UserP
 
 export async function fetchUserFromBackend(email: string): Promise<User | null> {
     const { data, error } = await supabase
-        .from('users')
+        .from(AUTHENTICATED_USER_INFO_VIEW)
         .select('*')
         .eq('email', email)
         .maybeSingle();
@@ -48,14 +51,16 @@ export async function fetchUserFromBackend(email: string): Promise<User | null> 
     }
 
     if (!data) return null;
+    console.log('Fetched user data:', data);
 
     const publicUrl = data.profile_photo_path
-        ? await resolvePublicUrl('user-profile-pictures', data.profile_photo_path)
+        ? await resolvePublicUrl(USER_PROFILE_PICTURE_BUCKET, data.profile_photo_path)
         : null;
 
     return {
         ...data,
         profile_photo_url: publicUrl ?? null,
+        is_admin: hasAdminAppointments(data.appointments || []),
     } as User;
 }
 

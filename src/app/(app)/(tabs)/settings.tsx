@@ -70,9 +70,12 @@ export default function Settings() {
         </View>
 
         <WideButton variant="default" text="Logout" onPress={signOut} style={styles.logoutButton} />
+        <View style={styles.metaContainer}>
+          <Text style={styles.metaText}>Version {appVersion}</Text>
+          <Text style={styles.metaText}>© Sheares Web {new Date().getFullYear()}</Text>
+          <Text style={styles.metaText}>Made with ❤️ by the Sheares Web Team</Text>
+        </View>
 
-        <Text style={styles.metaText}>Version {appVersion}</Text>
-        <Text style={styles.metaText}>© Sheares Web {new Date().getFullYear()}</Text>
 
         <Modal visible={isSupportModalOpen} onClose={() => setIsSupportModalOpen(false)} title="Need assistance?">
           <Text style={styles.modalText}>
@@ -149,6 +152,9 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   logoutButton: {
+    marginBottom: 20,
+  },
+  metaContainer: {
     marginBottom: 20,
   },
   metaText: {

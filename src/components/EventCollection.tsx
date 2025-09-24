@@ -1,4 +1,4 @@
-import { ScrollView, View, StyleSheet } from 'react-native';
+import { ScrollView, View, StyleSheet, Text } from 'react-native';
 import { Image } from 'expo-image';
 import { Event, EventStatus } from '@/types/event';
 import EventCard from './EventCard';
@@ -12,9 +12,6 @@ interface EventCollectionProps {
 
 
 const EventCollection: React.FC<EventCollectionProps> = ({ events, status }) => {
-    const placeholderImage = status === EventStatus.Current
-        ? require('@/assets/images/emptyCurrentEventsPlaceholder.png')
-        : require('@/assets/images/emptyUpcomingEventsPlaceholder.png');
 
     return (
         <View style={styles.scrollWrapper}>
@@ -33,9 +30,7 @@ const EventCollection: React.FC<EventCollectionProps> = ({ events, status }) => 
                     ))}
                 </ScrollView>
             ) : (
-                <View style={styles.placeholderContainer}>
-                    <Image source={placeholderImage} style={styles.placeholderImage} contentFit='contain' />
-                </View>
+                <Text style={styles.noEvent}>There are no {status} event.</Text>
             )}
         </View>
     );
@@ -49,14 +44,10 @@ const styles = StyleSheet.create({
         gap: 10,
         paddingVertical: 10,
     },
-    placeholderContainer: {
-        flex: 1,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    placeholderImage: {
-        width: 300,
-        height: 300,
+    noEvent: {
+        fontSize: 14,
+        color: '#999',
+        marginTop: 10,
     },
 });
 

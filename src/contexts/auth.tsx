@@ -28,7 +28,8 @@ import { getExpoPushNotificationToken } from '@/data/notif/notifications';
 
 // Session Type
 type Session =
-    | { type: UserType.User; user: User; provider: 'apple' | 'google'; googleSession?: UserGoogleSignIn }
+    | { type: UserType.User; user: User; provider: 'apple' }
+    | { type: UserType.User; user: User; provider: 'google'; googleSession: UserGoogleSignIn }
     | { type: UserType.Guest }
     | null;
 
@@ -82,10 +83,13 @@ export function useSession() {
 export function SessionProvider({ children }: PropsWithChildren) {
     const [[isLoading, session], setSession] = useStorageState<Session>('session');
     const [error, setError] = useState<string | null>(null);
+    const [user, setUser] = useState<User | null>(null);
 
     const isGuest = session?.type !== UserType.User;
-    const displayName = session?.type === UserType.User ? session.user.display_name : 'Guest';
-    const user = session?.type === UserType.User ? session.user : null;
+    const displayName = !isGuest ?
+        user?.display_name ? user.display_name :
+            user?.name ? user.name : "User" :
+        'Guest';
 
     const clearError = () => setError(null);
 
@@ -99,17 +103,65 @@ export function SessionProvider({ children }: PropsWithChildren) {
         });
     }, []);
 
-    const storeSession = (user: User | null, provider?: 'apple' | 'google', googleUser?: UserGoogleSignIn) => {
-        if (user && provider) {
-            setSession({
-                type: UserType.User,
-                user,
-                provider,
-                googleSession: provider === 'google' ? googleUser : undefined
-            });
+    useEffect(() => {
+        const refreshUserData = async () => {
+            if (session?.type === UserType.User) {
+                try {
+                    if (session.provider === 'google') {
+                        const refreshedUser = await fetchUserFromBackend(session.googleSession.user.email);
+                        if (refreshedUser) {
+                            setUser(refreshedUser);
+                        } else {
+                            console.error("Session exists but user not found in backend.");
+                            setError("Your account could not be found. Please sign in again.");
+                            clearSession();
+                        }
+                    }
+                } catch (err) {
+                    console.error('Failed to refresh user data:', err);
+                    setError("Error fetching user data. Please check your connection.");
+                }
+            }
+        };
+
+        refreshUserData();
+    }, [
+        session?.type,
+        session?.type === UserType.User ? session.provider === 'google' ? session.googleSession.user.email : undefined : undefined
+    ]);
+
+    const authenticateWithSupabase = async (idToken: string) => {
+        const { error } = await supabase.auth.signInWithIdToken({
+            provider: 'google',
+            token: idToken,
+        });
+
+        if (error) {
+            console.error("Supabase auth error:", error.message);
+            setError("Unable to sign in. Please try again later.");
+            return null;
+        }
+        return true;
+    };
+
+    const storeSession = (user: User | null, provider?: 'apple' | 'google', googleUser?: UserGoogleSignIn | null) => {
+        if (user) {
+            if (provider === 'apple') {
+                setSession({ user, type: UserType.User, provider });
+                setUser(user);
+            }
+            if (provider === 'google' && googleUser) {
+                setSession({ user, type: UserType.User, provider, googleSession: googleUser });
+                setUser(user);
+            }
         } else {
             setSession({ type: UserType.Guest });
         }
+    };
+
+    const clearSession = () => {
+        setSession(null);
+        setUser(null);
     };
 
     // Update Expo push token
@@ -238,7 +290,7 @@ export function SessionProvider({ children }: PropsWithChildren) {
             }
         }
         await supabase.auth.signOut();
-        setSession(null);
+        clearSession();
     };
 
     // Continue as guest

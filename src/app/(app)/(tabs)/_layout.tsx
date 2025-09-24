@@ -4,6 +4,7 @@ import Feather from '@expo/vector-icons/Feather';
 import { useSession } from '@/contexts/auth';
 import LoadingScreen from '@/components/Screens/LoadingScreen';
 import React from 'react';
+import { FontAwesome } from '@expo/vector-icons';
 
 export function TabLayout() {
   return (
@@ -42,7 +43,7 @@ export function TabLayout() {
         name="settings"
         options={{
           title: 'Settings',
-          tabBarIcon: ({ color, size }) => <Feather name="settings" size={size} color={color} />,
+          tabBarIcon: ({ color, size }) => <FontAwesome name="user" size={size} color={color} />,
         }}
       />
     </Tabs>

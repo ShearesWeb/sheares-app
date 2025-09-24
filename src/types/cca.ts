@@ -9,12 +9,12 @@ export enum CCAType {
 }
 
 export enum CCAPositionType {
-    Chair = 'chair',
-    Head = 'head',
-    Captain = 'captain',
+    Lead = 'lead',
     Vice = 'vice',
+    Blockcomm = 'blockcomm',
     Maincomm = 'maincomm',
     Subcomm = 'subcomm',
+    TeamManager = 'team manager',
     Member = 'member',
 }
 

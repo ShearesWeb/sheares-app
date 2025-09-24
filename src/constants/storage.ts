@@ -1,0 +1,1 @@
+export const USER_PROFILE_PICTURE_BUCKET: string = "user-profile-pictures";
