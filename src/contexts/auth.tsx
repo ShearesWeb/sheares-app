@@ -5,15 +5,12 @@ import React, {
     useEffect,
     useState,
 } from 'react';
-import { Platform } from 'react-native';
-import * as AppleAuthentication from 'expo-apple-authentication';
+import { signInAsync, AppleAuthenticationScope } from 'expo-apple-authentication';
 import { useStorageState } from './useStorageState';
 import {
     GoogleSignin,
     isErrorWithCode,
-    isSuccessResponse,
     statusCodes,
-    User as UserGoogleSignIn,
 } from '@react-native-google-signin/google-signin';
 import { User, UserType } from '@/types/user';
 import { supabase } from '../utils/supabase';
@@ -28,8 +25,7 @@ import { getExpoPushNotificationToken } from '@/data/notif/notifications';
 
 // Session Type
 type Session =
-    | { type: UserType.User; user: User; provider: 'apple' }
-    | { type: UserType.User; user: User; provider: 'google'; googleSession: UserGoogleSignIn }
+    | { type: UserType.User; user: User; provider: 'apple' | 'google'; }
     | { type: UserType.Guest }
     | null;
 
@@ -107,15 +103,13 @@ export function SessionProvider({ children }: PropsWithChildren) {
         const refreshUserData = async () => {
             if (session?.type === UserType.User) {
                 try {
-                    if (session.provider === 'google') {
-                        const refreshedUser = await fetchUserFromBackend(session.googleSession.user.email);
-                        if (refreshedUser) {
-                            setUser(refreshedUser);
-                        } else {
-                            console.error("Session exists but user not found in backend.");
-                            setError("Your account could not be found. Please sign in again.");
-                            clearSession();
-                        }
+                    const refreshedUser = await fetchUserFromBackend(session.user.email);
+                    if (refreshedUser) {
+                        setUser(refreshedUser);
+                    } else {
+                        console.error("Session exists but user not found in backend.");
+                        setError("Your account could not be found. Please sign in again.");
+                        clearSession();
                     }
                 } catch (err) {
                     console.error('Failed to refresh user data:', err);
@@ -127,7 +121,7 @@ export function SessionProvider({ children }: PropsWithChildren) {
         refreshUserData();
     }, [
         session?.type,
-        session?.type === UserType.User ? session.provider === 'google' ? session.googleSession.user.email : undefined : undefined
+        session?.type === UserType.User ? session.user.email : undefined
     ]);
 
     const authenticateWithSupabase = async (idToken: string) => {
@@ -144,16 +138,10 @@ export function SessionProvider({ children }: PropsWithChildren) {
         return true;
     };
 
-    const storeSession = (user: User | null, provider?: 'apple' | 'google', googleUser?: UserGoogleSignIn | null) => {
-        if (user) {
-            if (provider === 'apple') {
-                setSession({ user, type: UserType.User, provider });
-                setUser(user);
-            }
-            if (provider === 'google' && googleUser) {
-                setSession({ user, type: UserType.User, provider, googleSession: googleUser });
-                setUser(user);
-            }
+    const storeSession = (user: User | null, provider?: 'apple' | 'google') => {
+        if (user && provider) {
+            setSession({ user, type: UserType.User, provider });
+            setUser(user);
         } else {
             setSession({ type: UserType.Guest });
         }
@@ -177,10 +165,10 @@ export function SessionProvider({ children }: PropsWithChildren) {
     // Apple Sign-In
     const signInWithApple = async () => {
         try {
-            const credential = await AppleAuthentication.signInAsync({
+            const credential = await signInAsync({
                 requestedScopes: [
-                    AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
-                    AppleAuthentication.AppleAuthenticationScope.EMAIL,
+                    AppleAuthenticationScope.FULL_NAME,
+                    AppleAuthenticationScope.EMAIL,
                 ],
             });
 
@@ -252,7 +240,7 @@ export function SessionProvider({ children }: PropsWithChildren) {
             }
 
             const user = await fetchUserFromBackend(googleUser.user.email);
-            storeSession(user, 'google', googleUser);
+            storeSession(user, 'google');
 
             if (user) {
                 await updateExpoPushToken(user.id);
