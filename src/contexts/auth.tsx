@@ -28,7 +28,8 @@ import { getExpoPushNotificationToken } from '@/data/notif/notifications';
 
 // Session Type
 type Session =
-    | { type: UserType.User; user: User; provider: 'apple' | 'google'; googleSession?: UserGoogleSignIn }
+    | { type: UserType.User; user: User; provider: 'apple' }
+    | { type: UserType.User; user: User; provider: 'google'; googleSession: UserGoogleSignIn }
     | { type: UserType.Guest }
     | null;
 
@@ -90,7 +91,6 @@ export function SessionProvider({ children }: PropsWithChildren) {
             user?.name ? user.name : "User" :
         'Guest';
 
-
     const clearError = () => setError(null);
 
     // Configure Google Sign In
@@ -103,6 +103,32 @@ export function SessionProvider({ children }: PropsWithChildren) {
         });
     }, []);
 
+    useEffect(() => {
+        const refreshUserData = async () => {
+            if (session?.type === UserType.User) {
+                try {
+                    if (session.provider === 'google') {
+                        const refreshedUser = await fetchUserFromBackend(session.googleSession.user.email);
+                        if (refreshedUser) {
+                            setUser(refreshedUser);
+                        } else {
+                            console.error("Session exists but user not found in backend.");
+                            setError("Your account could not be found. Please sign in again.");
+                            clearSession();
+                        }
+                    }
+                } catch (err) {
+                    console.error('Failed to refresh user data:', err);
+                    setError("Error fetching user data. Please check your connection.");
+                }
+            }
+        };
+
+        refreshUserData();
+    }, [
+        session?.type,
+        session?.type === UserType.User ? session.provider === 'google' ? session.googleSession.user.email : undefined : undefined
+    ]);
 
     const authenticateWithSupabase = async (idToken: string) => {
         const { error } = await supabase.auth.signInWithIdToken({
@@ -118,9 +144,16 @@ export function SessionProvider({ children }: PropsWithChildren) {
         return true;
     };
 
-    const storeSession = (user: User | null, googleUser: UserGoogleSignIn | null) => {
+    const storeSession = (user: User | null, provider?: 'apple' | 'google', googleUser?: UserGoogleSignIn | null) => {
         if (user) {
-            setSession({ type: UserType.User, googleSession: googleUser as UserGoogleSignIn, user });
+            if (provider === 'apple') {
+                setSession({ user, type: UserType.User, provider });
+                setUser(user);
+            }
+            if (provider === 'google' && googleUser) {
+                setSession({ user, type: UserType.User, provider, googleSession: googleUser });
+                setUser(user);
+            }
         } else {
             setSession({ type: UserType.Guest });
         }
@@ -268,49 +301,57 @@ export function SessionProvider({ children }: PropsWithChildren) {
     // Update profile picture (only for authenticated users)
     const updateUserProfilePicture =
         session?.type === UserType.User
-            ? async (fileData: ImagePickerAsset): Promise<string> => {
+            ? async (fileData: ImagePickerAsset): Promise<string | null> => {
                 const userId = session.user.id;
-                const filePath = await uploadUserProfilePictureStorage(userId, user?.profile_photo_path || null, fileData);
-                if (!filePath) {
-                    throw new Error('Failed to upload image to storage.');
+
+                try {
+                    const filePath = await uploadUserProfilePictureStorage(
+                        userId,
+                        user?.profile_photo_path || null,
+                        fileData
+                    );
+
+                    if (!filePath) {
+                        throw new Error('Failed to upload image to storage.');
+                    }
+
+                    const url = await updateUserProfilePictureApi(userId, filePath);
+
+                    if (!url) {
+                        throw new Error('Failed to update user image in database.');
+                    }
+
+                    // Update session with new image info
+                    session.user.profile_photo_path = filePath;
+                    session.user.profile_photo_url = url;
+                    setSession({ ...session });
+
+                    return url;
+                } catch (error) {
+                    console.error('Profile picture update failed:', error);
+                    throw error;
                 }
-
-                const url = await updateUserProfilePictureApi(userId, filePath);
-
-                if (!url) {
-                    throw new Error('Failed to update user image in database.');
-                }
-
-                session.user.profile_photo_path = filePath;
-                session.user.profile_photo_url = url;
-                setSession({ ...session });
-
-                return url;
-            } catch (error) {
-                console.error('Profile picture update failed:', error);
-                throw error;
             }
-}
             : noopAsync;
 
-return (
-    <AuthContext.Provider
-        value={{
-            signInWithApple,
-            signInWithGoogle,
-            signOut,
-            continueAsGuest,
-            updateUserProfilePicture,
-            user,
-            session,
-            isGuest,
-            isLoading,
-            displayName,
-            error,
-            clearError,
-        }}
-    >
-        {children}
-    </AuthContext.Provider>
-);
+    return (
+        <AuthContext.Provider
+            value={{
+                signInWithApple,
+                signInWithGoogle,
+                signOut,
+                continueAsGuest,
+                updateUserProfilePicture,
+                user,
+                session,
+                isGuest,
+                isLoading,
+                displayName,
+                error,
+                clearError,
+            }}
+        >
+            {children}
+        </AuthContext.Provider>
+    );
 }
