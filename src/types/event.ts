@@ -30,3 +30,11 @@ export interface Event {
 
 export type CreateEventInput = Omit<Event, 'id' | 'status'>;
 export type EventLike = Event | CreateEventInput;
+export type CreateEventOutput = {
+    id: number;
+    created_at: Date;
+};
+
+export type UpdateEventInput = {
+    id: number;
+} & Partial<Omit<Event, 'id' | 'created_at' | 'author'>>;
