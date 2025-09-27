@@ -1,5 +1,6 @@
 const IS_DEV = process.env.APP_VARIANT === 'development';
 const IS_PREVIEW = process.env.APP_VARIANT === 'preview';
+const IS_PROD = process.env.APP_VARIANT === 'production';
 
 const getUniqueIdentifier = () => {
     if (IS_DEV) {
@@ -14,11 +15,11 @@ const getAppName = () => {
         return 'Sheares App (Dev)';
     }
 
-    if (IS_PROD) {
-        return 'Sheares App';
+    if (IS_PREVIEW) {
+        return 'Sheares App (Preview)';
     }
 
-    return 'Sheares App (Preview)';
+    return 'Sheares App';
 };
 
 export default ({ config }) => ({
