@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "300177701301",
+    "project_id": "preprod-com-project-intranet",
+    "storage_bucket": "preprod-com-project-intranet.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:300177701301:android:6d21f8b973708b976e81fc",
+        "android_client_info": {
+          "package_name": "com.sheareswebteam.shearesapp.dev"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "300177701301-bkblb0frustprhheg4cufmjtqc2nb83d.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC1TXFBWKCXVGhCCjZBXtqBykAs1ZpAa5c"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "300177701301-bkblb0frustprhheg4cufmjtqc2nb83d.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
