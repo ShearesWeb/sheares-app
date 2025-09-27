@@ -3,9 +3,9 @@ const IS_PREVIEW = process.env.APP_VARIANT === 'preview';
 const IS_PROD = process.env.APP_VARIANT === 'production';
 
 const getUniqueIdentifier = () => {
-    if (IS_DEV) {
-        return 'com.sheareswebteam.shearesapp.dev';
-    }
+    // if (IS_DEV) {
+    //     return 'com.sheareswebteam.shearesapp.dev';
+    // }
 
     return 'com.sheareswebteam.shearesapp';
 };
