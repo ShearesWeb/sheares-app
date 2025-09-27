@@ -14,11 +14,11 @@ const getAppName = () => {
         return 'Sheares App (Dev)';
     }
 
-    if (IS_PREVIEW) {
-        return 'Sheares App (Preview)';
+    if (IS_PROD) {
+        return 'Sheares App';
     }
 
-    return 'Sheares App';
+    return 'Sheares App (Preview)';
 };
 
 export default ({ config }) => ({
