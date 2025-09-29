@@ -3,11 +3,11 @@
 <plist version="1.0">
 <dict>
 	<key>CLIENT_ID</key>
-	<string>300177701301-ncdra76ligdvjkv8a9jq1jpouq0k68h4.apps.googleusercontent.com</string>
+	<string>300177701301-h8t42f14lefdodol6p2butfnq9he4hrn.apps.googleusercontent.com</string>
 	<key>REVERSED_CLIENT_ID</key>
-	<string>com.googleusercontent.apps.300177701301-ncdra76ligdvjkv8a9jq1jpouq0k68h4</string>
+	<string>com.googleusercontent.apps.300177701301-h8t42f14lefdodol6p2butfnq9he4hrn</string>
 	<key>ANDROID_CLIENT_ID</key>
-	<string>300177701301-3g8enof5q42igtg9tb7kotep352popa3.apps.googleusercontent.com</string>
+	<string>300177701301-jncaibtehu1tbqlgqdn6immsi1tc2ikt.apps.googleusercontent.com</string>
 	<key>API_KEY</key>
 	<string>AIzaSyAjZBph98ce9Z1EBhmyYnUFVaE7HhEs8x0</string>
 	<key>GCM_SENDER_ID</key>
@@ -15,7 +15,7 @@
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
-	<string>com.sheareswebteam.shearesapp</string>
+	<string>com.sheareswebteam.shearesapp.dev</string>
 	<key>PROJECT_ID</key>
 	<string>preprod-com-project-intranet</string>
 	<key>STORAGE_BUCKET</key>
@@ -31,6 +31,6 @@
 	<key>IS_SIGNIN_ENABLED</key>
 	<true></true>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:300177701301:ios:d6dff039e98f25c36e81fc</string>
+	<string>1:300177701301:ios:60621996b7dd9d516e81fc</string>
 </dict>
 </plist>

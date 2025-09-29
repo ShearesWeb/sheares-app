@@ -8,9 +8,7 @@
       "developmentClient": true,
       "distribution": "internal",
       "env": {
-        "APP_VARIANT": "development",
-        "GOOGLE_SERVICES_PLIST": "./GoogleService-Info-prod.plist",
-        "GOOGLE_SERVICES_JSON": "./google-services-prod.json"
+        "APP_VARIANT": "development"
       }
     },
     "preview": {

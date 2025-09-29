@@ -22,13 +22,7 @@
       "entitlements": {
         "aps-environment": "production"
       },
-      "bundleIdentifier": "com.sheareswebteam.shearesapp",
-      "urlSchemes": [
-        "com.googleusercontent.apps.218841951797-tlfao4r4ghrl2bi2k5mk3ainjt61qqcf",
-        "218841951797-tlfao4r4ghrl2bi2k5mk3ainjt61qqcf.apps.googleusercontent.com",
-        "com.sheareswebteam.shearesapp",
-        "src"
-      ]
+      "bundleIdentifier": "com.sheareswebteam.shearesapp"
     },
     "android": {
       "icon": "./assets/images/icon.png",
