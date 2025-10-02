@@ -22,23 +22,42 @@ const getAppName = () => {
     return 'Sheares App';
 };
 
+const getIosUrlScheme = () => {
+    if (IS_DEV) {
+        return 'com.googleusercontent.apps.300177701301-h8t42f14lefdodol6p2butfnq9he4hrn';
+    }
+    return 'com.googleusercontent.apps.218841951797-tlfao4r4ghrl2bi2k5mk3ainjt61qqcf';
+};
+
 export default ({ config }) => ({
     ...config,
     name: getAppName(),
+    plugins: [
+        ...(config.plugins || []).filter(plugin =>
+            plugin !== "@react-native-google-signin/google-signin" &&
+            !Array.isArray(plugin) || plugin[0] !== "@react-native-google-signin/google-signin"
+        ),
+        [
+            "@react-native-google-signin/google-signin",
+            {
+                "iosUrlScheme": getIosUrlScheme()
+            }
+        ]
+    ],
     ios: {
         ...config.ios,
         bundleIdentifier: getUniqueIdentifier(),
-        googleServicesFile: process.env.GOOGLE_SERVICES_PLIST ?? './GoogleService-Info.plist',
-        urlSchemes: [
-            'com.googleusercontent.apps.218841951797-tlfao4r4ghrl2bi2k5mk3ainjt61qqcf',
-            '218841951797-tlfao4r4ghrl2bi2k5mk3ainjt61qqcf.apps.googleusercontent.com',
-            'com.sheareswebteam.shearesapp',
-            'src'
-        ],
+        // googleServicesFile: process.env.GOOGLE_SERVICES_PLIST ?? './GoogleService-Info.plist',
+        // urlSchemes: [
+        //     'com.googleusercontent.apps.218841951797-tlfao4r4ghrl2bi2k5mk3ainjt61qqcf',
+        //     '218841951797-tlfao4r4ghrl2bi2k5mk3ainjt61qqcf.apps.googleusercontent.com',
+        //     'com.sheareswebteam.shearesapp',
+        //     'src'
+        // ],
     },
     android: {
         ...config.android,
         package: getUniqueIdentifier(),
-        googleServicesFile: process.env.GOOGLE_SERVICES_JSON ?? './google-services.json',
+        // googleServicesFile: process.env.GOOGLE_SERVICES_JSON ?? './google-services.json',
     },
 });

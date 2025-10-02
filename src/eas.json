@@ -21,17 +21,13 @@
       "developmentClient": true,
       "distribution": "internal",
       "env": {
-        "APP_VARIANT": "production",
-        "GOOGLE_SERVICES_PLIST": "./GoogleService-Info-prod.plist",
-        "GOOGLE_SERVICES_JSON": "./google-services-prod.json"
+        "APP_VARIANT": "production"
       }
     },
     "production": {
       "autoIncrement": true,
       "env": {
-        "APP_VARIANT": "production",
-        "GOOGLE_SERVICES_PLIST": "./GoogleService-Info-prod.plist",
-        "GOOGLE_SERVICES_JSON": "./google-services-prod.json"
+        "APP_VARIANT": "production"
       }
     }
   },
