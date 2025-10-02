@@ -47,7 +47,7 @@ export default ({ config }) => ({
     ios: {
         ...config.ios,
         bundleIdentifier: getUniqueIdentifier(),
-        // googleServicesFile: process.env.GOOGLE_SERVICES_PLIST ?? './GoogleService-Info.plist',
+        googleServicesFile: process.env.GOOGLE_SERVICES_PLIST ?? './GoogleService-Info.plist',
         // urlSchemes: [
         //     'com.googleusercontent.apps.218841951797-tlfao4r4ghrl2bi2k5mk3ainjt61qqcf',
         //     '218841951797-tlfao4r4ghrl2bi2k5mk3ainjt61qqcf.apps.googleusercontent.com',
@@ -58,6 +58,6 @@ export default ({ config }) => ({
     android: {
         ...config.android,
         package: getUniqueIdentifier(),
-        // googleServicesFile: process.env.GOOGLE_SERVICES_JSON ?? './google-services.json',
+        googleServicesFile: process.env.GOOGLE_SERVICES_JSON ?? './google-services.json',
     },
 });
