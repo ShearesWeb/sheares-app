@@ -29,11 +29,12 @@ export default ({ config }) => ({
         ...config.ios,
         bundleIdentifier: getUniqueIdentifier(),
         googleServicesFile: process.env.GOOGLE_SERVICES_PLIST ?? './GoogleService-Info.plist',
-        // urlSchemes: [
-        //     'com.googleusercontent.apps.218841951797-tlfao4r4ghrl2bi2k5mk3ainjt61qqcf',
-        //     'com.sheareswebteam.shearesapp',
-        //     'src'
-        // ],
+        urlSchemes: [
+            'com.googleusercontent.apps.218841951797-tlfao4r4ghrl2bi2k5mk3ainjt61qqcf',
+            '218841951797-tlfao4r4ghrl2bi2k5mk3ainjt61qqcf.apps.googleusercontent.com',
+            'com.sheareswebteam.shearesapp',
+            'src'
+        ],
     },
     android: {
         ...config.android,
