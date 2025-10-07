@@ -27,7 +27,8 @@
     "production": {
       "autoIncrement": true,
       "env": {
-        "APP_VARIANT": "production"
+        "APP_VARIANT": "production",
+        "GOOGLE_SERVICES_PLIST": "GOOGLE_SERVICES_PLIST"
       }
     }
   },
