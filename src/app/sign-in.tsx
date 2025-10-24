@@ -3,13 +3,11 @@ import { useSession } from '@/contexts/auth';
 import { router } from 'expo-router';
 import { SafeAreaView, StyleSheet, Text, View } from 'react-native';
 import { Image } from 'expo-image';
-import * as AppleAuthentication from 'expo-apple-authentication';
 import SignInButton from '@/components/Buttons/SignInButton';
 import TermsModal from '@/components/Modals/TermsModal';
 import LoadingScreen from '@/components/Screens/LoadingScreen';
 import { useTermsData } from '@/hooks/useTermsHook';
 import { Platform } from 'react-native';
-import TextModal from '@/components/Modals/TextModal';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 
@@ -57,12 +55,12 @@ export default function SignIn() {
 
                 {/* Apple Sign-In Button */}
                 {Platform.OS === 'ios' && (
-                    <AppleAuthentication.AppleAuthenticationButton
-                        buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
-                        buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
-                        cornerRadius={5}
-                        style={styles.appleButton}
+                    <SignInButton
+                        variant="default"
+                        text="Sign in with Apple"
                         onPress={handleAppleSignIn}
+                        style={styles.signInButton}
+                        imageSource={require('@/assets/images/apple-logo.png')}
                     />)}
 
                 {/* Google Sign-In Button */}
