@@ -9,6 +9,8 @@ import {UpdateEventInput} from "@/types/event";
 const USE_MOCK = true;
 
 export async function fetchAllEventsApi(): Promise<Event[]> {
+    console.log("Fetching all Events from API...");
+
     if (USE_MOCK) {
         return Promise.resolve(mockEvents);
     }
@@ -18,10 +20,30 @@ export async function fetchAllEventsApi(): Promise<Event[]> {
     // const response = await fetch('/api/events');
     // return response.json();
 
-    return Promise.resolve([]);
+    const{data,error} = await supabase
+        .from(EVENT_INFO_VIEW)
+        .select('*')
+        .order('start_time', { ascending: false });
+
+    if (error || !data) {
+        throw new Error(`Failed to fetch events: ${error?.message ?? "Unknown error"}`);
+    }
+
+    const result: Event[] = await Promise.all(
+        data.map(async (item: any): Promise<Event> => {
+            return {
+                ...item,
+                startTime: new Date(item.start_time),
+                endTime: new Date(item.end_time),
+                createdAt: new Date(item.created_at)
+        };})
+    );
+    return result;
 }
 
 export async function fetchEventApi(id: number): Promise<Event | null> {
+    console.log(`Fetching Event with ID ${id}...`);
+
     if (USE_MOCK) {
         const event = mockEvents.find(e => e.id === id) ?? null;
         return Promise.resolve(event);
@@ -33,7 +55,23 @@ export async function fetchEventApi(id: number): Promise<Event | null> {
     // if (!response.ok) return null;
     // return response.json();
 
-    return Promise.resolve(null);
+    const { data, error } = await supabase
+        .from(EVENT_INFO_VIEW)
+        .select(`*`)
+        .eq("id", id)
+        .maybeSingle();
+    
+    if (error || !data) {
+        console.error(`Error fetching Event with ID ${id}:`, error?.message ?? "Unknown error");
+        return null;
+    }
+
+    return {
+        ...data,
+        startTime: new Date(data.start_time),
+        endTime: new Date(data.end_time),
+        createdAt: new Date(data.created_at),
+    } as Event;
 }
 
 export async function createEventApi(event: CreateEventInput): Promise<CreateEventOutput> {
