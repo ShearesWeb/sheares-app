@@ -1,9 +1,9 @@
 import { EventSignup } from "@/types/event-signups";
 import { supabase } from "@/utils/supabase";
-import { EVENT_SIGNUPS_TABLE,EVENT_SIGNUPS_INFO_VIEW } from "@/constants/tables";
+import { EVENT_SIGNUPS_TABLE, EVENT_SIGNUPS_INFO_VIEW } from "@/constants/tables";
 import { mockEventSignups } from "../mock/event-signups";
 
-const USE_MOCK = true;
+const USE_MOCK = false;
 
 // Fetch all signups for a specific event
 export async function fetchEventSignupsByEventApi(eventId: number): Promise<EventSignup[]> {
@@ -68,7 +68,8 @@ export async function createEventSignupApi(signup: EventSignup): Promise<void> {
             {
                 user_id: signup.userId,
                 event_id: signup.eventId,
-                signed_up_at: signup.signedUpAt || new Date(),
+                sign_up_time: signup.signedUpAt || new Date(),
+                check_in_time: null,
             },
         ]);
 
@@ -100,23 +101,23 @@ export async function deleteEventSignupApi(userId: number, eventId: number): Pro
 }
 
 // Check if a user is already signed up for an event 
-export async function isUserSignedUpApi(userId: number, eventId: number): Promise<boolean> { 
-  console.log(`Checking signup status: User ${userId} ↔ Event ${eventId}...`); 
- 
-  if (USE_MOCK) { 
-    return mockEventSignups.some(s => s.userId === userId && s.eventId === eventId); 
-  } 
- 
-  // Use the base table for existence checks (most efficient with a composite unique index on (user_id, event_id)) 
-  const { count, error } = await supabase 
-    .from(EVENT_SIGNUPS_TABLE) 
-    .select('event_id', { count: 'exact', head: true }) // head: true avoids returning row data 
-    .eq('user_id', userId) 
-    .eq('event_id', eventId); 
- 
-  if (error) { 
-    throw new Error(`Failed to check signup status: ${error.message}`); 
-  } 
- 
-  return (count ?? 0) > 0; 
+export async function isUserSignedUpApi(userId: number, eventId: number): Promise<boolean> {
+    console.log(`Checking signup status: User ${userId} ↔ Event ${eventId}...`);
+
+    if (USE_MOCK) {
+        return mockEventSignups.some(s => s.userId === userId && s.eventId === eventId);
+    }
+
+    // Use the base table for existence checks (most efficient with a composite unique index on (user_id, event_id)) 
+    const { count, error } = await supabase
+        .from(EVENT_SIGNUPS_TABLE)
+        .select('event_id', { count: 'exact', head: true }) // head: true avoids returning row data 
+        .eq('user_id', userId)
+        .eq('event_id', eventId);
+
+    if (error) {
+        throw new Error(`Failed to check signup status: ${error.message}`);
+    }
+
+    return (count ?? 0) > 0;
 }

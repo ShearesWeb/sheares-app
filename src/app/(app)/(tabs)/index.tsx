@@ -106,11 +106,11 @@ export default function Index() {
           isFeatureEnabled('eventsFeature') ? (
             <>
               <Text style={styles.header}>Your Signups</Text>
-              <EventCollection events={currentEvents} status={EventStatus.Current} userId={userId}/>
+              <EventCollection events={currentEvents} status={EventStatus.Current} userId={userId} />
               <Text style={styles.header}>Current Events</Text>
-              <EventCollection events={currentEvents} status={EventStatus.Current} userId={userId}/>
+              <EventCollection events={currentEvents} status={EventStatus.Current} userId={userId} />
               <Text style={styles.header}>Upcoming Events</Text>
-              <EventCollection events={upcomingEvents} status={EventStatus.Upcoming} userId={userId}/>
+              <EventCollection events={upcomingEvents} status={EventStatus.Upcoming} userId={userId} />
             </>
           ) : (
             <View style={{ marginTop: 20 }}>

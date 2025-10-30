@@ -23,7 +23,7 @@ export interface Event {
     description?: string | null;
     venue?: string | null;
     imageUrl?: string | null;
-    ccaId?: number | null;
+    ccaId: number;
     eventType: EventType;
     status: EventStatus;
 }
