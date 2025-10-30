@@ -1,4 +1,4 @@
-import { CreateEventInput, Event } from "@/types/event";
+import { CreateEventInput, Event, EventType } from "@/types/event";
 import { mockEvents } from "../mock/events";
 import { getEventStatus } from "@/utils/comparators";
 import { User } from "@/types/user";
@@ -6,7 +6,7 @@ import { supabase } from "@/utils/supabase";
 import { EVENT_INFO_VIEW } from "@/constants/tables";
 import { CreateEventOutput } from "@/types/event";
 import {UpdateEventInput} from "@/types/event";
-const USE_MOCK = true;
+const USE_MOCK = false;
 
 export async function fetchAllEventsApi(): Promise<Event[]> {
     console.log("Fetching all Events from API...");
@@ -35,7 +35,8 @@ export async function fetchAllEventsApi(): Promise<Event[]> {
                 ...item,
                 startTime: new Date(item.start_time),
                 endTime: new Date(item.end_time),
-                createdAt: new Date(item.created_at)
+                createdAt: new Date(item.created_at),
+                eventType: item.event_type as EventType
         };})
     );
     return result;
@@ -71,6 +72,7 @@ export async function fetchEventApi(id: number): Promise<Event | null> {
         startTime: new Date(data.start_time),
         endTime: new Date(data.end_time),
         createdAt: new Date(data.created_at),
+        eventType: data.event_type as EventType,
     } as Event;
 }
 

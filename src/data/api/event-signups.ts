@@ -98,3 +98,25 @@ export async function deleteEventSignupApi(userId: number, eventId: number): Pro
         throw new Error(`Failed to delete signup: ${error.message}`);
     }
 }
+
+// Check if a user is already signed up for an event 
+export async function isUserSignedUpApi(userId: number, eventId: number): Promise<boolean> { 
+  console.log(`Checking signup status: User ${userId} ↔ Event ${eventId}...`); 
+ 
+  if (USE_MOCK) { 
+    return mockEventSignups.some(s => s.userId === userId && s.eventId === eventId); 
+  } 
+ 
+  // Use the base table for existence checks (most efficient with a composite unique index on (user_id, event_id)) 
+  const { count, error } = await supabase 
+    .from(EVENT_SIGNUPS_TABLE) 
+    .select('event_id', { count: 'exact', head: true }) // head: true avoids returning row data 
+    .eq('user_id', userId) 
+    .eq('event_id', eventId); 
+ 
+  if (error) { 
+    throw new Error(`Failed to check signup status: ${error.message}`); 
+  } 
+ 
+  return (count ?? 0) > 0; 
+}
