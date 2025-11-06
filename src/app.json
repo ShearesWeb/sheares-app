@@ -59,7 +59,6 @@
       ],
       "expo-font",
       "expo-web-browser",
-      "@react-native-google-signin/google-signin",
       "expo-notifications"
     ],
     "experiments": {
@@ -75,6 +74,8 @@
     "runtimeVersion": {
       "policy": "appVersion"
     },
-    "updates": {}
+    "updates": {
+      "url": "https://u.expo.dev/15814ec1-0647-4cde-bcd7-8e06fffe7a1a"
+    }
   }
 }

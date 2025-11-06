@@ -124,19 +124,19 @@ export function SessionProvider({ children }: PropsWithChildren) {
         session?.type === UserType.User ? session.user.email : undefined
     ]);
 
-    const authenticateWithSupabase = async (idToken: string) => {
-        const { error } = await supabase.auth.signInWithIdToken({
-            provider: 'google',
-            token: idToken,
-        });
+    // const authenticateWithSupabase = async (idToken: string) => {
+    //     const { error } = await supabase.auth.signInWithIdToken({
+    //         provider: 'google',
+    //         token: idToken,
+    //     });
 
-        if (error) {
-            console.error("Supabase auth error:", error.message);
-            setError("Unable to sign in. Please try again later.");
-            return null;
-        }
-        return true;
-    };
+    //     if (error) {
+    //         console.error("Supabase auth error:", error.message);
+    //         setError("Unable to sign in. Please try again later.");
+    //         return null;
+    //     }
+    //     return true;
+    // };
 
     const storeSession = (user: User | null, provider?: 'apple' | 'google') => {
         if (user && provider) {
@@ -150,6 +150,17 @@ export function SessionProvider({ children }: PropsWithChildren) {
     const clearSession = () => {
         setSession(null);
         setUser(null);
+    };
+
+    const getUserFromSupabase = async () => {
+        const { data: { user: supabaseUser } } = await supabase.auth.getUser();
+
+        if (!supabaseUser?.email) {
+            throw new Error('No user email found');
+        }
+
+        const customUser = await fetchUserFromBackend(supabaseUser.email);
+        return { customUser, supabaseUser };
     };
 
     // Update Expo push token
@@ -184,16 +195,11 @@ export function SessionProvider({ children }: PropsWithChildren) {
                     return;
                 }
 
-                if (credential.email) {
-                    const user = await fetchUserFromBackend(credential.email);
-                    storeSession(user, 'apple');
+                const { customUser } = await getUserFromSupabase();
+                storeSession(customUser, 'apple');
 
-                    if (user) {
-                        await updateExpoPushToken(user.id);
-                    }
-                } else {
-                    // Handle case where email is not provided (subsequent logins)
-                    storeSession(null);
+                if (customUser) {
+                    await updateExpoPushToken(customUser.id);
                 }
             }
         } catch (error: any) {
@@ -239,11 +245,11 @@ export function SessionProvider({ children }: PropsWithChildren) {
                 return;
             }
 
-            const user = await fetchUserFromBackend(googleUser.user.email);
-            storeSession(user, 'google');
+            const { customUser } = await getUserFromSupabase();
+            storeSession(customUser, 'google');
 
-            if (user) {
-                await updateExpoPushToken(user.id);
+            if (customUser) {
+                await updateExpoPushToken(customUser.id);
             }
 
         } catch (error) {

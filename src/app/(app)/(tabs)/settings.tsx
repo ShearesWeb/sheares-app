@@ -69,7 +69,13 @@ export default function Settings() {
           </TouchableOpacity>
         </View>
 
-        <WideButton variant="default" text="Logout" onPress={signOut} style={styles.logoutButton} />
+        <View style={styles.logoutButtonContainer} >
+          <WideButton variant="default" text="Logout" onPress={signOut} />
+          {!isGuest &&
+            <WideButton variant="dark" text="Delete Account" onPress={signOut} style={styles.logoutButton} />
+          }
+        </View>
+
         <View style={styles.metaContainer}>
           <Text style={styles.metaText}>Version {appVersion}</Text>
           <Text style={styles.metaText}>© Sheares Web {new Date().getFullYear()}</Text>
@@ -151,8 +157,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#333',
   },
-  logoutButton: {
+  logoutButtonContainer: {
+    alignItems: 'center',
     marginBottom: 20,
+  },
+  logoutButton: {
+    marginTop: 10,
   },
   metaContainer: {
     marginBottom: 20,

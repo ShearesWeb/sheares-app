@@ -11,8 +11,10 @@ expo-env.d.ts
 
 # Google services file
 *.google-services.json
-google-services.json
+GoogleService-Info-prod.plist
 GoogleService-Info.plist
+google-services-prod.json
+google-services.json
 
 # Native
 .kotlin/
@@ -38,6 +40,7 @@ yarn-error.*
 # local env files
 .env*.
 .env
+.env.*
 
 # typescript
 *.tsbuildinfo
