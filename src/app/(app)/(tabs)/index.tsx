@@ -94,7 +94,7 @@ export default function Index() {
         </View>
         {user?.is_admin && (
           <View style={styles.actionButtonGroup}>
-            <ActionButton text='Create Announcement' onPress={() => router.navigate('/announcement/create')} />
+            <ActionButton text='Manage Announcement' onPress={() => router.navigate('/announcement/create')} />
             {isFeatureEnabled('eventsFeature') && <ActionButton text='Manage Events' onPress={() => router.navigate('/event/main')} />}
           </View>
         )}
