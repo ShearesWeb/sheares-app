@@ -3,7 +3,7 @@ import { mockEvents } from "../mock/events";
 import { getEventStatus } from "@/utils/comparators";
 import { User } from "@/types/user";
 import { supabase } from "@/utils/supabase";
-import { EVENT_INFO_VIEW } from "@/constants/tables";
+import { EVENT_INFO_TABLE, EVENT_INFO_VIEW } from "@/constants/tables";
 import { CreateEventOutput } from "@/types/event";
 import {UpdateEventInput} from "@/types/event";
 const USE_MOCK = false;
@@ -86,29 +86,27 @@ export async function createEventApi(event: CreateEventInput): Promise<CreateEve
         mockEvents.push(newEvent);
 
         // Return updated event
-        return Promise.resolve({id, created_at: new Date()});
+        return Promise.resolve({ id, created_at: new Date() });
     }
 
     const { data, error } = await supabase
-                .from(EVENT_INFO_VIEW)
-                .insert([
-                    {
-                        startTime: event.startTime,
-    endTime: event.endTime,
-    signupStartTime: event.signupStartTime,
-    signupEndTime: event.signupEndTime,
-    name: event.name,
-    description: event.description,
-    venue: event.venue,
-    imageUrl: event.imageUrl,
-    ccaId: event.ccaId,
-    eventType: event.eventType,
-                    },
-                ])
-                .select('id, created_at')
-                .single();
-        if (error) {
-        throw new Error(`Failed to create announcement: ${error.message}`);
+        .from(EVENT_INFO_TABLE)
+        .insert([
+            {
+                start_time: event.startTime,
+                end_time: event.endTime,
+                name: event.name,
+                description: event.description,
+                venue: event.venue,
+                image_url: event.imageUrl,
+                cca_id: event.ccaId,
+                event_type: event.eventType,
+            },
+        ])
+        .select('id, created_at')
+        .single();
+    if (error) {
+        throw new Error(`Failed to create event: ${error.message}`);
     }
 
     return {
@@ -118,7 +116,7 @@ export async function createEventApi(event: CreateEventInput): Promise<CreateEve
 
 }
 
-export async function updateEventApi(event:UpdateEventInput ): Promise<void> {
+export async function updateEventApi(event: UpdateEventInput): Promise<void> {
     // if (USE_MOCK) {
     //     const index = mockEvents.findIndex(e => e.id === event.id);
     //     if (index === -1) {
@@ -133,13 +131,13 @@ export async function updateEventApi(event:UpdateEventInput ): Promise<void> {
     // }
 
     const { id, ...fieldsToUpdate } = event;
-    
-        if (Object.keys(fieldsToUpdate).length === 0) {
-            throw new Error('No fields provided for update.');
-        }
-    
-        // Format the fields
-        const updateData: any = {};
+
+    if (Object.keys(fieldsToUpdate).length === 0) {
+        throw new Error('No fields provided for update.');
+    }
+
+    // Format the fields
+    const updateData: any = {};
     if (fieldsToUpdate.startTime) updateData.start_time = fieldsToUpdate.startTime.toISOString?.() ?? fieldsToUpdate.startTime;
     if (fieldsToUpdate.endTime) updateData.end_time = fieldsToUpdate.endTime.toISOString?.() ?? fieldsToUpdate.endTime;
     if (fieldsToUpdate.signupStartTime !== undefined) {
@@ -147,29 +145,24 @@ export async function updateEventApi(event:UpdateEventInput ): Promise<void> {
             ? fieldsToUpdate.signupStartTime.toISOString?.() ?? fieldsToUpdate.signupStartTime
             : null;
     }
-    if (fieldsToUpdate.signupEndTime !== undefined) {
-        updateData.signup_end_time = fieldsToUpdate.signupEndTime
-            ? fieldsToUpdate.signupEndTime.toISOString?.() ?? fieldsToUpdate.signupEndTime
-            : null;
-    }
+
     if (fieldsToUpdate.name) updateData.name = fieldsToUpdate.name;
     if (fieldsToUpdate.description !== undefined) updateData.description = fieldsToUpdate.description ?? null;
     if (fieldsToUpdate.venue !== undefined) updateData.venue = fieldsToUpdate.venue ?? null;
     if (fieldsToUpdate.imageUrl !== undefined) updateData.image_url = fieldsToUpdate.imageUrl ?? null;
     if (fieldsToUpdate.ccaId !== undefined) updateData.cca_id = fieldsToUpdate.ccaId ?? null;
     if (fieldsToUpdate.eventType) updateData.event_type = fieldsToUpdate.eventType;
-    if (fieldsToUpdate.status) updateData.status = fieldsToUpdate.status;
-    
-        const { error } = await supabase
-            .from(EVENT_INFO_VIEW)
-            .update(updateData)
-            .eq('id', id);
-    
-        if (error) {
-            throw new Error(`Failed to update event ${id}: ${error.message}`);
-        }
-    
-        return;
+
+    const { error } = await supabase
+        .from(EVENT_INFO_TABLE)
+        .update(updateData)
+        .eq('id', id);
+
+    if (error) {
+        throw new Error(`Failed to update event ${id}: ${error.message}`);
+    }
+
+    return;
 }
 
 export async function deleteEventApi(id: number): Promise<void> {
@@ -186,13 +179,13 @@ export async function deleteEventApi(id: number): Promise<void> {
     }
 
     const { error } = await supabase
-            .from(EVENT_INFO_VIEW)
-            .delete()
-            .eq('id', id);
-    
-        if (error) {
-            throw new Error(`Failed to delete event ${id}: ${error.message}`);
-        }
-    
-        return;
+        .from(EVENT_INFO_TABLE)
+        .delete()
+        .eq('id', id);
+
+    if (error) {
+        throw new Error(`Failed to delete event ${id}: ${error.message}`);
+    }
+
+    return;
 }
