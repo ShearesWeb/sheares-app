@@ -6,103 +6,73 @@ import { supabase } from "@/utils/supabase";
 import { EVENT_INFO_VIEW } from "@/constants/tables";
 import { CreateEventOutput } from "@/types/event";
 import {UpdateEventInput} from "@/types/event";
-const USE_MOCK = true;
+const USE_MOCK = false;
 
 export async function fetchAllEventsApi(): Promise<Event[]> {
-  if (USE_MOCK) {
-    return Promise.resolve(mockEvents);
-  }
+    console.log("Fetching all Events from API...");
 
-  const { data, error } = await supabase
-    .from(EVENT_INFO_VIEW)
-    .select(`
-      id,
-      start_time,
-      end_time,
-      signup_start_time,
-      signup_end_time,
-      name,
-      description,
-      venue,
-      image_url,
-      cca_id,
-      event_type,
-      status
-    `);
+    if (USE_MOCK) {
+        return Promise.resolve(mockEvents);
+    }
 
-  if (error) {
-    throw new Error(`Failed to fetch events: ${error.message}`);
-  }
+    // Replace with real API call
+    // Example:
+    // const response = await fetch('/api/events');
+    // return response.json();
 
-  // Map DB rows -> Event[]
-  const events: Event[] = (data ?? []).map((row: any) => ({
-    id: row.id,
-    startTime: row.start_time ? new Date(row.start_time) : null,
-    endTime: row.end_time ? new Date(row.end_time) : null,
-    signupStartTime: row.signup_start_time ? new Date(row.signup_start_time) : null,
-    signupEndTime: row.signup_end_time ? new Date(row.signup_end_time) : null,
-    name: row.name,
-    description: row.description ?? null,
-    venue: row.venue ?? null,
-    imageUrl: row.image_url ?? null,
-    ccaId: row.cca_id ?? null,
-    eventType: row.event_type,   // assumes DB stores enum compatible with your EventType
-    status: row.status,          // assumes DB stores enum compatible with your EventStatus
-  }));
+    const{data,error} = await supabase
+        .from(EVENT_INFO_VIEW)
+        .select('*')
+        .order('start_time', { ascending: false });
 
-  return events;
+    if (error || !data) {
+        throw new Error(`Failed to fetch events: ${error?.message ?? "Unknown error"}`);
+    }
+
+    const result: Event[] = await Promise.all(
+        data.map(async (item: any): Promise<Event> => {
+            return {
+                ...item,
+                startTime: new Date(item.start_time),
+                endTime: new Date(item.end_time),
+                createdAt: new Date(item.created_at)
+        };})
+    );
+    return result;
 }
 
 export async function fetchEventApi(id: number): Promise<Event | null> {
-  if (USE_MOCK) {
-    const event = mockEvents.find(e => e.id === id) ?? null;
-    return Promise.resolve(event);
-  }
+    console.log(`Fetching Event with ID ${id}...`);
 
-  const { data, error } = await supabase
-    .from(EVENT_INFO_VIEW)
-    .select(`
-      id,
-      start_time,
-      end_time,
-      signup_start_time,
-      signup_end_time,
-      name,
-      description,
-      venue,
-      image_url,
-      cca_id,
-      event_type,
-      status
-    `)
-    .eq('id', id)
-    .single();
+    if (USE_MOCK) {
+        const event = mockEvents.find(e => e.id === id) ?? null;
+        return Promise.resolve(event);
+    }
 
-  if (error) {
-    if (error.code === 'PGRST116') return null; // not found
-    throw new Error(`Failed to fetch event ${id}: ${error.message}`);
-  }
+    // Replace with real API call
+    // Example:
+    // const response = await fetch(`/api/events/${id}`);
+    // if (!response.ok) return null;
+    // return response.json();
 
-  if (!data) return null;
+    const { data, error } = await supabase
+        .from(EVENT_INFO_VIEW)
+        .select(`*`)
+        .eq("id", id)
+        .maybeSingle();
+    
+    if (error || !data) {
+        console.error(`Error fetching Event with ID ${id}:`, error?.message ?? "Unknown error");
+        return null;
+    }
 
-  const event: Event = {
-    id: data.id,
-    startTime: data.start_time ? new Date(data.start_time) : null,
-    endTime: data.end_time ? new Date(data.end_time) : null,
-    signupStartTime: data.signup_start_time ? new Date(data.signup_start_time) : null,
-    signupEndTime: data.signup_end_time ? new Date(data.signup_end_time) : null,
-    name: data.name,
-    description: data.description ?? null,
-    venue: data.venue ?? null,
-    imageUrl: data.image_url ?? null,
-    ccaId: data.cca_id ?? null,
-    eventType: data.event_type,
-    status: data.status,
-  };
-
-  return event;
+    return {
+        ...data,
+        startTime: new Date(data.start_time),
+        endTime: new Date(data.end_time),
+        createdAt: new Date(data.created_at),
+    } as Event;
 }
-
 
 export async function createEventApi(event: CreateEventInput): Promise<CreateEventOutput> {
     if (USE_MOCK) {
