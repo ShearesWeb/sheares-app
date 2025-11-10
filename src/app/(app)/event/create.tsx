@@ -36,18 +36,21 @@ export default function CreateEvent() {
   // admin CCAs derived from user.appointments
   const adminCcas = useMemo(() => {
     const appts = (user as User | undefined)?.appointments ?? [];
-    return appts.filter(a => a.is_admin).map(a => ({ id: a.cca_id, name: a.cca_name }));
+    return appts
+      .filter(a => a.is_admin)
+      .map(a => ({ id: a.cca_id, name: a.cca_name }));
   }, [user]);
 
-  // which CCA is selected for this new event
-  const [selectedCcaId, setSelectedCcaId] = useState<number | null>(null);
+  // IMPORTANT: keep picker state as string; '' means none
+  const [selectedCcaId, setSelectedCcaId] = useState<string>('');
 
   // preselect from route param if valid
   useEffect(() => {
     if (!params?.ccaId) return;
-    const parsed = Number(params.ccaId);
-    if (!Number.isNaN(parsed) && adminCcas.some(c => c.id === parsed)) {
-      setSelectedCcaId(parsed);
+    const idStr = String(params.ccaId);
+    const idNum = Number(idStr);
+    if (!Number.isNaN(idNum) && adminCcas.some(c => c.id === idNum)) {
+      setSelectedCcaId(idStr);
     }
   }, [params?.ccaId, adminCcas]);
 
@@ -56,15 +59,12 @@ export default function CreateEvent() {
     if (Platform.OS === 'android') {
       ToastAndroid.show(message, ToastAndroid.SHORT);
     } else {
-      // simple inline alert as a lightweight stand-in for a toast on iOS
-      // (we still navigate immediately after showing it)
       Alert.alert('', message);
     }
   }
 
   const handleSave = async () => {
     try {
-      // guard: must be admin of at least one CCA
       if (adminCcas.length === 0) {
         setError({
           title: 'Not Authorized',
@@ -73,8 +73,7 @@ export default function CreateEvent() {
         return;
       }
 
-      // guard: must pick a CCA
-      if (selectedCcaId === null) {
+      if (!selectedCcaId) {
         setError({
           title: 'Select a CCA',
           message: 'Please choose the CCA you are creating this event for.',
@@ -82,7 +81,6 @@ export default function CreateEvent() {
         return;
       }
 
-      // guard: times
       if (!startTime) {
         setError({ title: 'Missing Start Date', message: 'Please select a start date for your event.' });
         return;
@@ -92,6 +90,8 @@ export default function CreateEvent() {
         return;
       }
 
+      const ccaIdNum = Number(selectedCcaId);
+
       const event: CreateEventInput = {
         name,
         description,
@@ -100,14 +100,13 @@ export default function CreateEvent() {
         endTime,
         eventType,
         imageUrl: imageSource?.uri,
-        ccaId: selectedCcaId, // enforce CCA ownership
+        ccaId: ccaIdNum, // enforce CCA ownership
       };
 
       await createEvent(event);
 
-      // toast/snackbar + auto-return
       notifySuccess('Event created');
-      router.back(); // returns to /event/main, preserving selection & triggering refresh via useFocusEffect
+      router.back(); // returns to /event/main; your useFocusEffect will refresh
     } catch (err: any) {
       setError({
         title: 'Error creating event',
@@ -129,7 +128,6 @@ export default function CreateEvent() {
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false}>
-        {/* If no admin CCAs, show info and bail */}
         {noAdmin ? (
           <InfoScreen
             message="You can’t create events"
@@ -142,12 +140,12 @@ export default function CreateEvent() {
             <View style={styles.pickerWrapper}>
               <Picker
                 selectedValue={selectedCcaId}
-                onValueChange={(val) => setSelectedCcaId(val === null ? null : Number(val))}
+                onValueChange={(val) => setSelectedCcaId(String(val ?? ''))}
                 style={styles.picker}
               >
-                <Picker.Item label="-- Choose your CCA --" value={null} key="placeholder" />
+                <Picker.Item label="-- Choose your CCA --" value="" key="placeholder" />
                 {adminCcas.map(cca => (
-                  <Picker.Item key={cca.id} label={cca.name} value={cca.id} />
+                  <Picker.Item key={cca.id} label={cca.name} value={String(cca.id)} />
                 ))}
               </Picker>
             </View>
