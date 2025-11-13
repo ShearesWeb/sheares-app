@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { StyleSheet, ScrollView, Text, View, TouchableOpacity, Platform, Alert, ToastAndroid } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Picker } from '@react-native-picker/picker';
 
 import TextInput from '@/components/Inputs/TextInput';
 import WideButton from '@/components/Buttons/WideButton';
@@ -24,7 +23,6 @@ export default function CreateEvent() {
 
   const [error, setError] = useState<ModalMessage | null>(null);
 
-  // form fields
   const [name, setName] = useState<string>('');
   const [description, setDescription] = useState<string | null>(null);
   const [venue, setVenue] = useState<string | null>('');
@@ -33,28 +31,22 @@ export default function CreateEvent() {
   const [eventType, setEventType] = useState<EventType>(EventType.Event);
   const [imageSource, setImageSource] = useState<ImageSource | null>(null);
 
-  // admin CCAs derived from user.appointments
   const adminCcas = useMemo(() => {
     const appts = (user as User | undefined)?.appointments ?? [];
-    return appts
-      .filter(a => a.is_admin)
-      .map(a => ({ id: a.cca_id, name: a.cca_name }));
+    return appts.filter(a => a.is_admin).map(a => ({ id: a.cca_id, name: a.cca_name }));
   }, [user]);
 
-  // IMPORTANT: keep picker state as string; '' means none
-  const [selectedCcaId, setSelectedCcaId] = useState<string>('');
+  const [selectedCcaId, setSelectedCcaId] = useState<number | null>(null);
 
   // preselect from route param if valid
   useEffect(() => {
     if (!params?.ccaId) return;
-    const idStr = String(params.ccaId);
-    const idNum = Number(idStr);
-    if (!Number.isNaN(idNum) && adminCcas.some(c => c.id === idNum)) {
-      setSelectedCcaId(idStr);
+    const parsed = Number(params.ccaId);
+    if (!Number.isNaN(parsed) && adminCcas.some(c => c.id === parsed)) {
+      setSelectedCcaId(parsed);
     }
   }, [params?.ccaId, adminCcas]);
 
-  // platform-friendly toast/snackbar
   function notifySuccess(message: string) {
     if (Platform.OS === 'android') {
       ToastAndroid.show(message, ToastAndroid.SHORT);
@@ -66,21 +58,13 @@ export default function CreateEvent() {
   const handleSave = async () => {
     try {
       if (adminCcas.length === 0) {
-        setError({
-          title: 'Not Authorized',
-          message: 'You are not an admin of any CCA, so you cannot create events.',
-        });
+        setError({ title: 'Not Authorized', message: 'You are not an admin of any CCA, so you cannot create events.' });
         return;
       }
-
-      if (!selectedCcaId) {
-        setError({
-          title: 'Select a CCA',
-          message: 'Please choose the CCA you are creating this event for.',
-        });
+      if (selectedCcaId === null) {
+        setError({ title: 'Select a CCA', message: 'Please choose the CCA you are creating this event for.' });
         return;
       }
-
       if (!startTime) {
         setError({ title: 'Missing Start Date', message: 'Please select a start date for your event.' });
         return;
@@ -90,8 +74,6 @@ export default function CreateEvent() {
         return;
       }
 
-      const ccaIdNum = Number(selectedCcaId);
-
       const event: CreateEventInput = {
         name,
         description,
@@ -100,13 +82,12 @@ export default function CreateEvent() {
         endTime,
         eventType,
         imageUrl: imageSource?.uri,
-        ccaId: ccaIdNum, // enforce CCA ownership
+        ccaId: selectedCcaId,
       };
 
       await createEvent(event);
-
       notifySuccess('Event created');
-      router.back(); // returns to /event/main; your useFocusEffect will refresh
+      router.back(); // main refreshes on focus
     } catch (err: any) {
       setError({
         title: 'Error creating event',
@@ -135,19 +116,21 @@ export default function CreateEvent() {
           />
         ) : (
           <>
-            {/* CCA Picker */}
+            {/* CCA Tiles */}
             <Text style={styles.label}>CCA (required)</Text>
-            <View style={styles.pickerWrapper}>
-              <Picker
-                selectedValue={selectedCcaId}
-                onValueChange={(val) => setSelectedCcaId(String(val ?? ''))}
-                style={styles.picker}
-              >
-                <Picker.Item label="-- Choose your CCA --" value="" key="placeholder" />
-                {adminCcas.map(cca => (
-                  <Picker.Item key={cca.id} label={cca.name} value={String(cca.id)} />
-                ))}
-              </Picker>
+            <View style={styles.tileWrap}>
+              {adminCcas.map(cca => {
+                const active = selectedCcaId === cca.id;
+                return (
+                  <TouchableOpacity
+                    key={cca.id}
+                    style={[styles.ccaTile, active && styles.ccaTileActive]}
+                    onPress={() => setSelectedCcaId(cca.id)}
+                  >
+                    <Text style={[styles.ccaTileText, active && styles.ccaTileTextActive]}>{cca.name}</Text>
+                  </TouchableOpacity>
+                );
+              })}
             </View>
 
             <Text style={styles.label}>Event Type</Text>
@@ -157,13 +140,13 @@ export default function CreateEvent() {
             <TextInput value={name} onChangeText={setName} />
 
             <Text style={styles.label}>Start Time (required)</Text>
-            <DateTimeInput value={startTime} onChange={(date) => setStartTime(date)} />
+            <DateTimeInput value={startTime} onChange={setStartTime} />
 
             <Text style={styles.label}>End Time (required)</Text>
-            <DateTimeInput value={endTime} onChange={(date) => setEndTime(date)} />
+            <DateTimeInput value={endTime} onChange={setEndTime} />
 
             <Text style={styles.label}>Image</Text>
-            <ImageInput initialSource={imageSource} onChangeImage={(src) => setImageSource(src)} />
+            <ImageInput initialSource={imageSource} onChangeImage={setImageSource} />
 
             <Text style={styles.label}>Description</Text>
             <TextInput value={description ?? ''} onChangeText={setDescription} numberOfLines={8} />
@@ -171,12 +154,7 @@ export default function CreateEvent() {
             <Text style={styles.label}>Venue</Text>
             <TextInput value={venue ?? ''} onChangeText={setVenue} />
 
-            <WideButton
-              style={styles.button}
-              variant="default"
-              text="Create Event"
-              onPress={handleSave}
-            />
+            <WideButton style={styles.button} variant="default" text="Create Event" onPress={handleSave} />
           </>
         )}
       </ScrollView>
@@ -185,6 +163,9 @@ export default function CreateEvent() {
     </SafeAreaView>
   );
 }
+
+const TILE_BORDER = '#ddd';
+const TILE_ACTIVE = '#F18437';
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff', paddingHorizontal: 20 },
@@ -206,6 +187,7 @@ const styles = StyleSheet.create({
   },
   backButtonText: { color: '#fff', fontSize: 20, fontWeight: '600' },
   headerTitle: { fontSize: 24, fontWeight: '600', color: '#111' },
+
   label: {
     fontSize: 16,
     fontWeight: 'bold',
@@ -214,6 +196,20 @@ const styles = StyleSheet.create({
     color: '#393939',
   },
   button: { marginTop: 20, paddingBottom: 25 },
-  pickerWrapper: { borderWidth: 1, borderColor: '#ccc', borderRadius: 8 },
-  picker: { width: '100%' },
+
+  tileWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  ccaTile: {
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderWidth: 1,
+    borderColor: TILE_BORDER,
+    borderRadius: 10,
+    backgroundColor: '#fff',
+  },
+  ccaTileActive: {
+    borderColor: TILE_ACTIVE,
+    backgroundColor: '#FFF3EC',
+  },
+  ccaTileText: { color: '#333', fontSize: 14, fontWeight: '600' },
+  ccaTileTextActive: { color: TILE_ACTIVE },
 });

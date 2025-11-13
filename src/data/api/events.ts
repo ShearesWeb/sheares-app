@@ -8,71 +8,109 @@ import { CreateEventOutput } from "@/types/event";
 import {UpdateEventInput} from "@/types/event";
 const USE_MOCK = false;
 
+// api/events.ts (only the two functions below changed)
+
 export async function fetchAllEventsApi(): Promise<Event[]> {
-    console.log("Fetching all Events from API...");
+  console.log("Fetching all Events from API...");
 
-    if (USE_MOCK) {
-        return Promise.resolve(mockEvents);
-    }
+  if (USE_MOCK) return Promise.resolve(mockEvents);
 
-    // Replace with real API call
-    // Example:
-    // const response = await fetch('/api/events');
-    // return response.json();
+  const { data, error } = await supabase
+    .from(EVENT_INFO_VIEW) // make sure this view selects the columns used below
+    .select('*')
+    .order('start_time', { ascending: false });
 
-    const{data,error} = await supabase
-        .from(EVENT_INFO_VIEW)
-        .select('*')
-        .order('start_time', { ascending: false });
+  if (error || !data) {
+    throw new Error(`Failed to fetch events: ${error?.message ?? "Unknown error"}`);
+  }
 
-    if (error || !data) {
-        throw new Error(`Failed to fetch events: ${error?.message ?? "Unknown error"}`);
-    }
+  const result: Event[] = data.map((row: any) => {
+    // Map snake_case -> camelCase
+    const mapped = {
+      id: row.id,
+      name: row.name ?? '',
+      description: row.description ?? null,
+      venue: row.venue ?? null,
+      imageUrl: row.image_url ?? null,
+      eventType: row.event_type,                 // enum/string as stored
+      ccaId: Number(row.cca_id),                 // IMPORTANT for filtering
+      startTime: row.start_time ? new Date(row.start_time) : new Date(),
+      endTime: row.end_time ? new Date(row.end_time) : new Date(),
+      signupStartTime: row.signup_start_time ? new Date(row.signup_start_time) : undefined,
+      signupEndTime: row.signup_end_time ? new Date(row.signup_end_time) : undefined,
+      createdAt: row.created_at ? new Date(row.created_at) : undefined,
+    } as Omit<Event, 'status'>;
 
-    const result: Event[] = await Promise.all(
-        data.map(async (item: any): Promise<Event> => {
-            return {
-                ...item,
-                startTime: new Date(item.start_time),
-                endTime: new Date(item.end_time),
-                createdAt: new Date(item.created_at)
-        };})
-    );
-    return result;
+    // Prefer status from view if present; else compute
+    const status = row.status ?? getEventStatus({
+      startTime: mapped.startTime,
+      endTime: mapped.endTime,
+      signupStartTime: mapped.signupStartTime,
+      signupEndTime: mapped.signupEndTime,
+      name: mapped.name,
+      description: mapped.description,
+      venue: mapped.venue,
+      imageUrl: mapped.imageUrl,
+      ccaId: mapped.ccaId,
+      eventType: mapped.eventType,
+    } as CreateEventInput);
+
+    return { ...mapped, status } as Event;
+  });
+
+  return result;
 }
 
 export async function fetchEventApi(id: number): Promise<Event | null> {
-    console.log(`Fetching Event with ID ${id}...`);
+  console.log(`Fetching Event with ID ${id}...`);
 
-    if (USE_MOCK) {
-        const event = mockEvents.find(e => e.id === id) ?? null;
-        return Promise.resolve(event);
-    }
+  if (USE_MOCK) {
+    const event = mockEvents.find(e => e.id === id) ?? null;
+    return Promise.resolve(event);
+  }
 
-    // Replace with real API call
-    // Example:
-    // const response = await fetch(`/api/events/${id}`);
-    // if (!response.ok) return null;
-    // return response.json();
+  const { data, error } = await supabase
+    .from(EVENT_INFO_VIEW)
+    .select('*')
+    .eq('id', id)
+    .maybeSingle();
 
-    const { data, error } = await supabase
-        .from(EVENT_INFO_VIEW)
-        .select(`*`)
-        .eq("id", id)
-        .maybeSingle();
-    
-    if (error || !data) {
-        console.error(`Error fetching Event with ID ${id}:`, error?.message ?? "Unknown error");
-        return null;
-    }
+  if (error || !data) {
+    console.error(`Error fetching Event with ID ${id}:`, error?.message ?? "Unknown error");
+    return null;
+  }
 
-    return {
-        ...data,
-        startTime: new Date(data.start_time),
-        endTime: new Date(data.end_time),
-        createdAt: new Date(data.created_at),
-    } as Event;
+  const mapped = {
+    id: data.id,
+    name: data.name ?? '',
+    description: data.description ?? null,
+    venue: data.venue ?? null,
+    imageUrl: data.image_url ?? null,
+    eventType: data.event_type,
+    ccaId: Number(data.cca_id),
+    startTime: data.start_time ? new Date(data.start_time) : new Date(),
+    endTime: data.end_time ? new Date(data.end_time) : new Date(),
+    signupStartTime: data.signup_start_time ? new Date(data.signup_start_time) : undefined,
+    signupEndTime: data.signup_end_time ? new Date(data.signup_end_time) : undefined,
+    createdAt: data.created_at ? new Date(data.created_at) : undefined,
+  } as Omit<Event, 'status'>;
+
+  const status = data.status ?? getEventStatus({
+    startTime: mapped.startTime,
+    endTime: mapped.endTime,
+    signupStartTime: mapped.signupStartTime,
+    signupEndTime: mapped.signupEndTime,
+    name: mapped.name,
+    description: mapped.description,
+    venue: mapped.venue,
+    imageUrl: mapped.imageUrl,
+    ccaId: mapped.ccaId,
+    eventType: mapped.eventType,
+  } as CreateEventInput);
+
+  return { ...mapped, status } as Event;
 }
+
 
 export async function createEventApi(event: CreateEventInput): Promise<CreateEventOutput> {
     if (USE_MOCK) {
