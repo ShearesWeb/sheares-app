@@ -3,6 +3,7 @@ export enum EventType {
     Event = 'event',
     Fundraiser = 'fundraiser',
     Election = 'election',
+    HallWideEvent = 'hall wide event',
 }
 
 export enum EventStatus {

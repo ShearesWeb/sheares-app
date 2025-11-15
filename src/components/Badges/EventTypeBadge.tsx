@@ -13,6 +13,7 @@ const eventTypeColors: Record<EventType, { backgroundColor: string; textColor: s
     [EventType.Fundraiser]: { backgroundColor: '#E53935', textColor: '#fff' },   // Red
     [EventType.Welfare]: { backgroundColor: '#8E24AA', textColor: '#fff' },      // Purple
     [EventType.Election]: { backgroundColor: '#FB8C00', textColor: '#fff' },     // Orange
+    [EventType.HallWideEvent]: { backgroundColor: '#09a31dff', textColor: '#fff' },     // Green
 };
 
 const EventTypeBadge: React.FC<EventTypeBadgeProps> = ({ eventType, style }) => {
