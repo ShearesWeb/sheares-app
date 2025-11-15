@@ -1,18 +1,21 @@
 import WideButton from '@/components/Buttons/WideButton';
 import { useSession } from '@/contexts/auth';
-import { Linking, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Linking, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Constants from 'expo-constants';
 import { AntDesign, Ionicons } from '@expo/vector-icons';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import Modal from '@/components/Modals/Modal';
 import ProfileImageEditor from '@/components/Images/ProfileImageEditor';
 import { useTermsData } from '@/hooks/useTermsHook';
 import TermsModal from '@/components/Modals/TermsModal';
+import { registerForPushNotificationsAsync } from '@/data/notif/notifications';
+import { supabase } from '@/utils/supabase';
+import { UserType } from '@/types/user';
 
 export default function Settings() {
   const appVersion = Constants.expoConfig?.version;
-  const { isGuest, displayName, signOut } = useSession();
+  const { isGuest, displayName, signOut, session } = useSession();
 
   const [isSupportModalOpen, setIsSupportModalOpen] = useState(false);
   const [isTermsModalOpen, setIsTermsModalOpen] = useState(false);
@@ -20,6 +23,53 @@ export default function Settings() {
   const { termsData, isLoading, error } = useTermsData();
 
   const openDeviceSettings = () => Linking.openSettings();
+  const deleteUserAccount = useCallback(async () => {
+    if (!session || session.type !== UserType.User) {
+      await Promise.resolve(signOut());
+      return;
+    }
+
+    try {
+      let pushToken: string | undefined;
+
+      try {
+        pushToken = await registerForPushNotificationsAsync();
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'Unknown error';
+        console.warn('Push notifications not available:', message);
+      }
+
+      if (pushToken) {
+        const { error: tokenError } = await supabase
+          .from('users')
+          .update({ expo_push_token: null })
+          .eq('id', session.user.id)
+          .eq('expo_push_token', pushToken);
+
+        if (tokenError) {
+          console.warn('Failed to remove stored push token:', tokenError.message);
+        }
+      }
+
+      const { error: deleteError } = await supabase
+        .from('users')
+        .delete()
+        .eq('id', session.user.id);
+
+      if (deleteError) {
+        throw new Error(deleteError.message);
+      }
+
+      await Promise.resolve(signOut());
+      Alert.alert('Account Deleted', 'Your account has been successfully deleted.');
+    } catch (error) {
+      console.error('Error during account deletion:', error);
+      Alert.alert(
+        'Delete Account Error',
+        'Something went wrong while deleting your account. Please try again.'
+      );
+    }
+  }, [session, signOut]);
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
@@ -71,9 +121,7 @@ export default function Settings() {
 
         <View style={styles.logoutButtonContainer} >
           <WideButton variant="default" text="Logout" onPress={signOut} />
-          {!isGuest &&
-            <WideButton variant="dark" text="Delete Account" onPress={signOut} style={styles.logoutButton} />
-          }
+          <WideButton variant="dark" text="Delete Account" onPress={deleteUserAccount} style={styles.logoutButton} />
         </View>
 
         <View style={styles.metaContainer}>
